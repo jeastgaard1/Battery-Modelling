@@ -51,7 +51,7 @@ else %calculation base on last value
     [battery_res]=Aging_ECM_0D(battery_res,options);
     
     %Interupt Simulation ##################################################
-    % These lines test if the battery is fully charged/discharged.
+    % These lines test if the battery is 
     if battery_res.U<2.5
         msg.interupt.Umin=1;
     elseif battery_res.U>4.2

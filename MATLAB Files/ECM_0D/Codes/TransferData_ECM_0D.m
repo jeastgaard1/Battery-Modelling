@@ -1,5 +1,9 @@
 function [battery_res] = TransferData_ECM_0D(battery_res,options)
 % Data transfer 2 -> 1 ####################################################
+
+% All this code does is move the data to the next available spot in the
+% data structure. 2->1 then setting 2 = 0; 
+% [4,12] -> [12,0]
 %Cell
 for trans=1:length(options.Transfer.Cell(:,1))
     battery_res.(options.Transfer.Cell{trans,:})(1,:) ...

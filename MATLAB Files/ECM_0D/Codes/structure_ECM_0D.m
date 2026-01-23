@@ -41,6 +41,8 @@ calc_value=struct(...
     );
 % Structure to Save Data ##################################################
 data_save.time=zeros(1,1);
+% All of this is just initializing all the saved information to zero so
+% that the program allocates approperate amount of space.
 %Cell
 for trans=1:length(options.Save.Cell(:,1))
     data_save.(options.Save.Cell{trans,:})=zeros(1,1);

@@ -29,7 +29,7 @@
 %%
 clear
 clc
-
+% This code allows MATLAB to find all the required files.
 addpath(genpath('Codes'));
 addpath(genpath('Codes/DataBase/Samsung50S'));
 addpath(genpath('Codes/Thermal'));
