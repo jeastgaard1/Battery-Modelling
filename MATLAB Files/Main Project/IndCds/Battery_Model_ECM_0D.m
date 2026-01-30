@@ -5,13 +5,13 @@ if options.bool.ini==1 %function called first time -> Cell states will be initia
     battery_res.time(1,1)=0; %set time to 0
     
     %Temperature ##########################################################
-    [battery_res]=ThermalModel_ECM_0D(battery_res,param,options,const);
+    [battery_res]=ThermalVSSi_Model(battery_res,param,options,const);
     
     %Battery Power ########################################################
     battery_res.P(1,1)=Power/(options.cell_con.p*options.cell_con.s); %Homogenous distribution: all cells equal
     
     %SoH ##################################################################
-    [battery_res]=Aging_ECM_0D(battery_res,options);
+    % [battery_res]=Aging_ECM_0D(battery_res,options);
     
     %SoC ##################################################################
     [battery_res,msg] = OCVandSOC_ECM_0D(battery_res,param,msg,options); 
@@ -25,14 +25,14 @@ if options.bool.ini==1 %function called first time -> Cell states will be initia
     
     %Diffusion ############################################################
     [battery_res,msg] = Solid_Diffusion_ECM_0D(battery_res,param,const,options,msg);
-
+    
     options.bool.ini=0; %Initilization done
 else %calculation base on last value
     %time #####################################################
     battery_res.time(2,1)=battery_res.time(1,1) + options.delta_t;                      %Time Variable
     
     %Temperature ##########################################################
-    [battery_res]=ThermalModel_ECM_0D(battery_res,param,options,const);
+    [battery_res]=ThermalVSSi_Model(battery_res,param,options,const);
     
     %Battery Power ########################################################
     battery_res.P(2,1)=Power/(options.cell_con.p*options.cell_con.s); %Homogenous distribution: all cells equal

@@ -1,3 +1,7 @@
+%Code for the Battery Model of the Project for W25/26 Battery Modelling
+%Course.
+%Created by David Posala 18.01.2026
+
 %##########################################################################
 %General points
 %Electro-chemical / Electrical:
@@ -30,22 +34,21 @@
 clear
 clc
 % This code allows MATLAB to find all the required files.
-addpath(genpath('Codes'));
-addpath(genpath('Codes/DataBase/Samsung50S'));
-addpath(genpath('Codes/Thermal'));
-addpath(genpath('Codes/Electrical'));
-addpath(genpath('Codes/Diffusion'));
-addpath(genpath('Codes/Aging'));
+addpath(genpath('IndCds'));
+addpath(genpath('IndCds/ThermalVSSi'));
+addpath(genpath('IndCds/Electrical'));
+addpath(genpath('IndCds/Data'));
+
 
 [options,msg]=options_ECM_0D;                      %Loads all settings: here you can set initial values, e.g. SoC
 
 [param,const]=CellParameter_ECM_0D(options);       %Loads cell parameter
-[battery_res,data_save]=structure_ECM_0D(options);%Loads final strucutre for results
+[battery_res,data_save]=structure_ECM_0D(options);% Loads final strucutre for results
 
 battery_res.Aging.SoH_R(1,1)=1; %Set inital SoH values
 battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 
-for i=1:1e5
+for i=1:2004
     if i<100 %Taxi-out
         power=-10;
     elseif i<200
@@ -57,7 +60,6 @@ for i=1:1e5
     else
         break;
     end
-    
     [battery_res,msg,options] = Battery_Model_ECM_0D(battery_res,param,msg,power,options,const); %Cell ECM Model
     
     if msg.interupt.Umin==1 || msg.interupt.Umax==1 %Stop simulation

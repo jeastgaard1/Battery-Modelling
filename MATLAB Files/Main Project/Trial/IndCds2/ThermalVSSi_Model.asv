@@ -1,0 +1,46 @@
+function [battery_res] = ThermalVSSi_Model(battery_res,param,options,timeStep)
+
+% === State variables ===
+T = battery_res.T(1,1);
+SoC = param.potentials.HC.DCH.GrSi_SoC(timeStep,1);
+battery_res.SoC(1,1) = maSoC;
+% === Fixed Si wt% (single composition for now) ===
+w = 0.3;   % choose any value 0–1
+
+% === OCV and entropic coefficient ===
+Uocv = param.OCV_tot(SoC, w);
+dUdT = param.dUdt(SoC, w);
+
+% === Temperature-dependent resistance ===
+R0 = param.R00(w);
+alphaR = 0.003;   % 0.3%/K typical for graphite-based cells
+R = R0 * (1 + alphaR*(T - param.T_amb));
+
+% === Nonlinear convection ===
+hA = param.hA * (1 + 0.02*(T - param.T_amb));
+
+% === Thermal mass ===
+Cth = param.thermal.mcp;
+
+% === Current (your original hard-coded value) ===
+I = 15;
+
+% === Terminal voltage ===
+V = Uocv - I*R;
+
+% === Irreversible heat ===
+Qirr = I^2 * R;
+
+% === Reversible heat ===
+Qrev = I * T * dUdT;
+
+% === Total heat balance ===
+battery_res.dTdt = (Qirr + Qrev - hA*(T - param.T_amb)) / Cth;
+
+% === Update temperature using YOUR timestep ===
+battery_res.T(1,1) = T + battery_res.dTdt * options.delta_t;
+
+% === SoC differential equation ===
+battery_res.dzdt = -I / param.Qnom;
+
+end

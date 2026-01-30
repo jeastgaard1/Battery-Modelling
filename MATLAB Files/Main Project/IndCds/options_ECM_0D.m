@@ -7,7 +7,7 @@ options.cell='Sam_50S'; % Cell Type
 % Bools ###################################################################
 options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
 options.bool.Aging=0;
-options.bool.Thermal=1;
+options.bool.Thermal=0;
 options.bool.cruise=0;
 options.bool.EIS=0; %Use EIS (1) or Pulse (0) data for parametrization
 
@@ -37,7 +37,7 @@ options.Electrical.tau_RC3_fac=1;
 %Solid Diffusion ##########################################################
 options.seg_particle=15; %Particle discretization (number of shells)
 % For more information on the number of shells, look at lecture notes.
-%In case of EIS Data:
+% In case of EIS Data:
 % These are just lists of string values so that we can reference the values
 % later.
 options.Names_ECM={'tau_1';'R_1';'tau_2';'R_2';'tau_3';'R_3';'tau_4';'R_4';'tau_5';'R_5' ...

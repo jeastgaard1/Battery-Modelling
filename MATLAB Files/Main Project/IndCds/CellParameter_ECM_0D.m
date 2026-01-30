@@ -7,8 +7,6 @@ function [param,const] = CellParameter_ECM_0D(options)
 const.F = 96485.3329;   % Faraday constant [C/mol]
 const.R = 8.3145;       % Gas constant [J/mol/K]
 
-T = options.ini.T + 273.15;   % convert to Kelvin
-
 %% ============================
 %  Particle Geometry
 %  ============================
@@ -52,18 +50,18 @@ Ea_graphite    = 35000;   % J/mol
 Ea_NMC         = 40000;   % J/mol
 T_ref          = 298.15;  % K
 
-% Temperature scaling
-D_graphite = D_ref_graphite * exp(-Ea_graphite/const.R * (1/T - 1/T_ref));
-D_NMC      = D_ref_NMC      * exp(-Ea_NMC     /const.R * (1/T - 1/T_ref));
-
-% τ = R_p^2 / D
-param.ParticleDiffusion.Anode.tau   = R_p^2 / D_graphite;
-param.ParticleDiffusion.Cathode.tau = R_p^2 / D_NMC;
-
-%% ============================
-%  Assign dV
-%  ============================
-param.ParticleDiffusion.Anode.dV   = dV;
-param.ParticleDiffusion.Cathode.dV = dV;
+% % Temperature scaling
+% D_graphite = D_ref_graphite * exp(-Ea_graphite/const.R * (1/T - 1/T_ref));
+% D_NMC      = D_ref_NMC      * exp(-Ea_NMC     /const.R * (1/T - 1/T_ref));
+% 
+% % τ = R_p^2 / D
+% param.ParticleDiffusion.Anode.tau   = R_p^2 / D_graphite;
+% param.ParticleDiffusion.Cathode.tau = R_p^2 / D_NMC;
+% 
+% %% ============================
+% %  Assign dV
+% %  ============================
+% param.ParticleDiffusion.Anode.dV   = dV;
+% param.ParticleDiffusion.Cathode.dV = dV;
 
 end
