@@ -1,0 +1,225 @@
+function [param] = ECM_Parameter_ECM_VolThev(options)
+
+% Retrieve given data in param
+load('Potential_Gr_Si_NMC.mat')
+
+% battery_res.<>(index,1) is how we will index.
+
+%% ECM Functions
+
+% Slope of linear SoC in given data. Can be changed if we later determine
+% current was not constant.
+param.Sa = -1 * (potentials.HC.DCH.GrSi_SoC(options.data.steps,1) - potentials.HC.DCH.GrSi_SoC(1,1))/options.data.steps;
+
+% Current (const)
+param.I = param.Sa * ( options.anode.Qa / options.anode.na );
+
+% Lithiation of Anode and Cathode
+time_vec = 1:1:2004;
+param.za = @(t) interp1(time_vec, param.potentials.HC.DCH.GrSi_SoC, t, 'linear', 'extrap');
+param.zc = @(t) interp1(time_vec, param.potentials.HC.DCH.NHM_SoC, t, 'linear', 'extrap');
+
+% OCV as a interpolated
+param.OCV_anode = @(t) interp1(param.potentials.HC.DCH.GrSi_SoC(:,1),potentials.HC.DCH.GrSi_OCV(:,1),param.za(t),'pchip','extrap');
+param.OCV_cathode = @(t) interp1(param.potentials.HC.DCH.NHM_SoC(:,1),potentials.HC.DCH.NHM_OCV(:,1),param.zc(t),'pchip','extrap');
+
+% Volume strain / expantion
+param.Volexp = @(t) options.anode.aSi * param.za(t); 
+
+% Volume-dependent resistance
+param.R0 = @(t) options.ECM.R0 * (1 + options.ECM.kR0 * param.Volexp(t) );
+
+% Cell voltage
+param.UCell = @(t) param.OCV_cathode(t) - param.OCV_
+
+
+% if options.bool.EIS==0 %Parametrization based on Pulse Data ###############
+%     if battery_res.P(index,1)<0
+%         %R0 #######################################################################
+%         battery_res.ECM.R(index,1)=param.fit.DCH.R0(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.R_fac;
+%         if battery_res.ECM.R(index,1)<0 ...
+%                 || battery_res.ECM.R(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R(index,1))>0
+%             msg.error.ECM.R=1;
+%             battery_res.ECM.R(index,1)=battery_res.ECM.R(index,1).*floor(battery_res.ECM.R(index,1)./abs(battery_res.ECM.R(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R(index,1)./abs(battery_res.ECM.R(index,1)*1.05))*1e-3;
+%         end
+% 
+%         %RC1 ######################################################################
+%         battery_res.ECM.R_RC1(index,1)=param.fit.DCH.R_RC1(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.RC1_fac;
+%         if battery_res.ECM.R_RC1(index,1)<0 ...
+%                 || battery_res.ECM.R_RC1(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R_RC1(index,1))>0
+%             msg.error.ECM.R_RC1=1;
+%             battery_res.ECM.R_RC1(index,1)=battery_res.ECM.R_RC1(index,1).*floor(battery_res.ECM.R_RC1(index,1)./abs(battery_res.ECM.R_RC1(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R_RC1(index,1)./abs(battery_res.ECM.R_RC1(index,1)*1.05))*1e-3;
+%         end
+%         battery_res.ECM.tau_RC1(index,1)=param.fit.DCH.tau_RC1(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *options.Electrical.tau_RC1_fac;
+%         if battery_res.ECM.tau_RC1(index,1)<0 ...
+%                 || battery_res.ECM.tau_RC1(index,1)==0 ...
+%                 || isnan(battery_res.ECM.tau_RC1(index,1))>0
+%             msg.error.ECM.tau_RC1=1;
+%             battery_res.ECM.tau_RC1(index,1)=battery_res.ECM.tau_RC1(index,1).*floor(battery_res.ECM.tau_RC1(index,1)./abs(battery_res.ECM.tau_RC1(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.tau_RC1(index,1)./abs(battery_res.ECM.tau_RC1(index,1)*1.05))*1e-3;
+%         end
+% 
+%         %RC2 ######################################################################
+%         battery_res.ECM.R_RC2(index,1)=param.fit.DCH.R_RC2(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.RC2_fac;
+%         if battery_res.ECM.R_RC2(index,1)<0 ...
+%                 || battery_res.ECM.R_RC2(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R_RC2(index,1))>0
+%             msg.error.ECM.R_RC2=1;
+%             battery_res.ECM.R_RC2(index,1)=battery_res.ECM.R_RC2(index,1).*floor(battery_res.ECM.R_RC2(index,1)./abs(battery_res.ECM.R_RC2(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R_RC2(index,1)./abs(battery_res.ECM.R_RC2(index,1)*1.05))*1e-3;
+%         end
+%         battery_res.ECM.tau_RC2(index,1)=param.fit.DCH.tau_RC2(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *options.Electrical.tau_RC2_fac;
+%         if battery_res.ECM.tau_RC2(index,1)<0 ...
+%                 || battery_res.ECM.tau_RC2(index,1)==0 ...
+%                 || isnan(battery_res.ECM.tau_RC2(index,1))>0
+%             msg.error.ECM.tau_RC2=1;
+%             battery_res.ECM.tau_RC2(index,1)=battery_res.ECM.tau_RC2(index,1).*floor(battery_res.ECM.tau_RC2(index,1)./abs(battery_res.ECM.tau_RC2(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.tau_RC2(index,1)./abs(battery_res.ECM.tau_RC2(index,1)*1.05))*1e-3;
+%         end
+% 
+%         %RC3 ######################################################################
+%         battery_res.ECM.R_RC3(index,1)=param.fit.DCH.R_RC3(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.RC3_fac;
+%         if battery_res.ECM.R_RC3(index,1)<0 ...
+%                 || battery_res.ECM.R_RC3(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R_RC3(index,1))>0
+%             msg.error.ECM.R_RC3=1;
+%             battery_res.ECM.R_RC3(index,1)=battery_res.ECM.R_RC3(index,1).*floor(battery_res.ECM.R_RC3(index,1)./abs(battery_res.ECM.R_RC3(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R_RC3(index,1)./abs(battery_res.ECM.R_RC3(index,1)*1.05))*1e-3;
+%         end
+%         battery_res.ECM.tau_RC3(index,1)=param.fit.DCH.tau_RC3(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *options.Electrical.tau_RC3_fac;
+%         if battery_res.ECM.tau_RC3(index,1)<0 ...
+%                 || battery_res.ECM.tau_RC3(index,1)==0 ...
+%                 || isnan(battery_res.ECM.tau_RC3(index,1))>0
+%             msg.error.ECM.tau_RC3=1;
+%             battery_res.ECM.tau_RC3(index,1)=battery_res.ECM.tau_RC3(index,1).*floor(battery_res.ECM.tau_RC3(index,1)./abs(battery_res.ECM.tau_RC3(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.tau_RC3(index,1)./abs(battery_res.ECM.tau_RC3(index,1)*1.05))*1e-3;
+%         end
+%     else
+%         %R0 #######################################################################
+%         battery_res.ECM.R(index,1)=param.fit.CH.R0(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.R_fac;
+%         if battery_res.ECM.R(index,1)<0 ...
+%                 || battery_res.ECM.R(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R(index,1))>0
+%             msg.error.ECM.R=1;
+%             battery_res.ECM.R(index,1)=battery_res.ECM.R(index,1).*floor(battery_res.ECM.R(index,1)./abs(battery_res.ECM.R(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R(index,1)./abs(battery_res.ECM.R(index,1)*1.05))*1e-3;
+%         end
+% 
+%         %RC1 ######################################################################
+%         battery_res.ECM.R_RC1(index,1)=param.fit.CH.R_RC1(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.RC1_fac;
+%         if battery_res.ECM.R_RC1(index,1)<0 ...
+%                 || battery_res.ECM.R_RC1(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R_RC1(index,1))>0
+%             msg.error.ECM.R_RC1=1;
+%             battery_res.ECM.R_RC1(index,1)=battery_res.ECM.R_RC1(index,1).*floor(battery_res.ECM.R_RC1(index,1)./abs(battery_res.ECM.R_RC1(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R_RC1(index,1)./abs(battery_res.ECM.R_RC1(index,1)*1.05))*1e-3;
+%         end
+%         battery_res.ECM.tau_RC1(index,1)=param.fit.CH.tau_RC1(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *options.Electrical.tau_RC1_fac;
+%         if battery_res.ECM.tau_RC1(index,1)<0 ...
+%                 || battery_res.ECM.tau_RC1(index,1)==0 ...
+%                 || isnan(battery_res.ECM.tau_RC1(index,1))>0
+%             msg.error.ECM.tau_RC1=1;
+%             battery_res.ECM.tau_RC1(index,1)=battery_res.ECM.tau_RC1(index,1).*floor(battery_res.ECM.tau_RC1(index,1)./abs(battery_res.ECM.tau_RC1(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.tau_RC1(index,1)./abs(battery_res.ECM.tau_RC1(index,1)*1.05))*1e-3;
+%         end
+% 
+%         %RC2 ######################################################################
+%         battery_res.ECM.R_RC2(index,1)=param.fit.CH.R_RC2(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.RC2_fac;
+%         if battery_res.ECM.R_RC2(index,1)<0 ...
+%                 || battery_res.ECM.R_RC2(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R_RC2(index,1))>0
+%             msg.error.ECM.R_RC2=1;
+%             battery_res.ECM.R_RC2(index,1)=battery_res.ECM.R_RC2(index,1).*floor(battery_res.ECM.R_RC2(index,1)./abs(battery_res.ECM.R_RC2(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R_RC2(index,1)./abs(battery_res.ECM.R_RC2(index,1)*1.05))*1e-3;
+%         end
+%         battery_res.ECM.tau_RC2(index,1)=param.fit.CH.tau_RC2(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *options.Electrical.tau_RC2_fac;
+%         if battery_res.ECM.tau_RC2(index,1)<0 ...
+%                 || battery_res.ECM.tau_RC2(index,1)==0 ...
+%                 || isnan(battery_res.ECM.tau_RC2(index,1))>0
+%             msg.error.ECM.tau_RC2=1;
+%             battery_res.ECM.tau_RC2(index,1)=battery_res.ECM.tau_RC2(index,1).*floor(battery_res.ECM.tau_RC2(index,1)./abs(battery_res.ECM.tau_RC2(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.tau_RC2(index,1)./abs(battery_res.ECM.tau_RC2(index,1)*1.05))*1e-3;
+%         end
+% 
+%         %RC3 ######################################################################
+%         battery_res.ECM.R_RC3(index,1)=param.fit.CH.R_RC3(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *battery_res.Aging.SoH_R(1,1)*options.Electrical.RC3_fac;
+%         if battery_res.ECM.R_RC3(index,1)<0 ...
+%                 || battery_res.ECM.R_RC3(index,1)==0 ...
+%                 || isnan(battery_res.ECM.R_RC3(index,1))>0
+%             msg.error.ECM.R_RC3=1;
+%             battery_res.ECM.R_RC3(index,1)=battery_res.ECM.R_RC3(index,1).*floor(battery_res.ECM.R_RC3(index,1)./abs(battery_res.ECM.R_RC3(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.R_RC3(index,1)./abs(battery_res.ECM.R_RC3(index,1)*1.05))*1e-3;
+%         end
+%         battery_res.ECM.tau_RC3(index,1)=param.fit.CH.tau_RC3(battery_res.SoC(index,1),battery_res.T(index,1)) ...
+%             *options.Electrical.tau_RC3_fac;
+%         if battery_res.ECM.tau_RC3(index,1)<0 ...
+%                 || battery_res.ECM.tau_RC3(index,1)==0 ...
+%                 || isnan(battery_res.ECM.tau_RC3(index,1))>0
+%             msg.error.ECM.tau_RC3=1;
+%             battery_res.ECM.tau_RC3(index,1)=battery_res.ECM.tau_RC3(index,1).*floor(battery_res.ECM.tau_RC3(index,1)./abs(battery_res.ECM.tau_RC3(index,1)*1.05)) ...
+%                 +floor(1-battery_res.ECM.tau_RC3(index,1)./abs(battery_res.ECM.tau_RC3(index,1)*1.05))*1e-3;
+%         end
+%     end
+% else %Parametrization based on EIS Data ###################################
+%     %EIS Data only for 25 °C right now
+%     %Zarc 1 & 2
+%     for ii=1:2
+%         for iii=1:length(options.Names_ECM(:,1))
+%             battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)= ...
+%                 interp1(param.fit.ECM.SoC,param.fit.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:}),battery_res.Cell.SoC(index,1));
+%             if battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)<0 ...
+%                     || battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)==0 ...
+%                     || isnan(battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1))>0
+%                 msg.error.ECM.Zarc=1;
+%                 battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)=battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1).*floor(1-battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)./abs(battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)*1.05)) ...
+%                     +floor(1-battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)./abs(battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)*1.05))*1e-3;
+%             end
+%         end
+%     end
+% 
+%     %WarBurg
+%     for ii=3:3
+%         for iii=1:6
+%             battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)= ...
+%                 interp1(param.fit.ECM.SoC,param.fit.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:}),battery_res.Cell.SoC(index,1));
+%             if battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)<0 ...
+%                     || battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)==0 ...
+%                     || isnan(battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1))>0
+%                 msg.error.ECM.WarBurg=1;
+%                 battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)=battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1).*floor(1-battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)./abs(battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)*1.05)) ...
+%                     +floor(1-battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)./abs(battery_res.ECM.(options.Names_Elements{ii,:}).(options.Names_ECM{iii,:})(index,1)*1.05))*1e-3;
+%             end
+%         end
+%     end
+% 
+%     %R0
+%     battery_res.ECM.R(index,1)=interp1(param.fit.ECM.SoC,param.fit.ECM.R0,battery_res.Cell.SoC(index,1));
+%     if battery_res.ECM.R(index,1)<0 ...
+%             || battery_res.ECM.R(index,1)==0 ...
+%             || isnan(battery_res.ECM.R(index,1))>0
+%         msg.error.ECM.R=1;
+%         battery_res.ECM.R(index,1)=battery_res.ECM.R(index,1).*floor(battery_res.ECM.R(index,1)./abs(battery_res.ECM.R(index,1)*1.05)) ...
+%             +floor(1-battery_res.ECM.R(index,1)./abs(rbattery_res.ECM.R(index,1)*1.05))*1e-3;
+%     end
+% end
+% %Entropy ##################################################################
+% battery_res.Entropy(index,1)=0;  %Add function
+end
+

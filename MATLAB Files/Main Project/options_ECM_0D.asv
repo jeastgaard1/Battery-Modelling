@@ -2,7 +2,6 @@ function [options,msg] = options_ECM_0D
 
 %% Simulation options
 options.data.steps = 2000;
-options.time_span = 1:1:2004;
 %% Model options
 %Cell type ################################################################
 options.cell='Sam_50S'; % Cell Type
@@ -14,11 +13,8 @@ options.ECM.R2 = 0; % Base resistance for second RC element
 options.ECM.C1 = 0; % Base capacitance for first RC element
 options.ECM.C2 = 0; % Base capacitance for second RC element
 
-options.ECM.kR0 = 0; % Sensitivity of R0 to Si strain.
-options.ECM.kR1 = 0; % Sensitivity of R1 to Si strain.
-options.ECM.kR2 = 0; % Sensitivity of R2 to Si strain.
-options.ECM.kC1 = 0; % Sensitivity of C1 to Si strain.
-options.ECM.kC2 = 0; % Sensitivity of C2 to Si strain.
+options.ECM.kR0 = 0; % 
+optoins.ECM
 
 % Bools ###################################################################
 options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
@@ -34,10 +30,9 @@ options.cell_con.s=1; % number of seriel-connected cells
 % Anode Values
 options.anode.Qa = 0; % NEED TO BE ADDED
 options.anode.na = 0; % NEED TO BE ADDED
-options.anode.aSi = 0; % Max volumetric strain when Si is fully lithiated.
 
 %Initial Values ###########################################################
-options.ini.T=20; % [°C]
+options.ini.T=20; % [Â°C]
 options.ini.SoC=0.95;% [-] 0-1
 
 %Aging ####################################################################

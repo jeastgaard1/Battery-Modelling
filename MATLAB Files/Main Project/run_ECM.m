@@ -30,12 +30,12 @@
 clear
 clc
 % This code allows MATLAB to find all the required files.
-addpath(genpath('Codes'));
-addpath(genpath('Codes/DataBase/Samsung50S'));
-addpath(genpath('Codes/Thermal'));
-addpath(genpath('Codes/Electrical'));
-addpath(genpath('Codes/Diffusion'));
-addpath(genpath('Codes/Aging'));
+% addpath(genpath('Codes'));
+% addpath(genpath('Codes/DataBase/Samsung50S'));
+% addpath(genpath('Codes/Thermal'));
+% addpath(genpath('Codes/Electrical'));
+% addpath(genpath('Codes/Diffusion'));
+% addpath(genpath('Codes/Aging'));
 
 [options,msg]=options_ECM_0D;                      %Loads all settings: here you can set initial values, e.g. SoC
 
@@ -45,19 +45,8 @@ addpath(genpath('Codes/Aging'));
 battery_res.Aging.SoH_R(1,1)=1; %Set inital SoH values
 battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 
-for i=1:1e5
-    if i<100 %Taxi-out
-        power=-10;
-    elseif i<200
-        power=-20;
-    elseif i<1500
-        power=-30;
-    elseif i<2000
-        power=30;
-    else
-        break;
-    end
-    [battery_res,msg,options] = Battery_Model_ECM_0D(battery_res,param,msg,power,options,const); %Cell ECM Model
+for i=1:options.data.steps
+    [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
     
     if msg.interupt.Umin==1 || msg.interupt.Umax==1 %Stop simulation
         break;
@@ -66,6 +55,25 @@ for i=1:1e5
     [data_save] = SaveData(battery_res,data_save,options,i); %Save Data
     
 end
+
+% ODE for Terminal Voltage
+x0 = [0; 0];
+ode_function = @(t,x) ECM_term_volt(battery_res.time(2,1), x, param);
+[t_sim, u_sim] = ode45(ode_function, options.time_span, x0)
+% Compute terminal voltage
+V_sim = zeros(size(t_sim));
+for k = 1:numel(t_sim)
+    V_sim(k) = grsi_ecm_voltage(t_sim(k), x_sim(k,:).', p);
+end
+
+% Plot
+figure; hold on;
+plot(t_sim, V_sim, 'LineWidth', 2);
+xlabel('Time [s]');
+ylabel('Terminal Voltage [V]');
+title('GrSi ECM Simulation');
+grid on;
+
 %% Plot data ###############################################################
 figure
 subplot(1,3,1)

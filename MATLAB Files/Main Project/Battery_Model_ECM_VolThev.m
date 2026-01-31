@@ -1,4 +1,4 @@
-function [battery_res,msg,options] = Battery_Model_ECM_0D(battery_res,param,msg,Power,options,const)
+function [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const)
 
 if options.bool.ini==1 %function called first time -> Cell states will be initialized
     %Time #################################################################
