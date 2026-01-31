@@ -1,67 +1,55 @@
 function [param,const] = CellParameter_ECM_0D(options)
-% Physically realistic parameter initialization for Solid Diffusion ECM 0D
 
-%% ============================
-%  Physical Constants
-%  ============================
-const.F = 96485.3329;   % Faraday constant [C/mol]
-const.R = 8.3145;       % Gas constant [J/mol/K]
+%Based on Pulse Data:
+load('Potential_Gr_Si_NMC.mat')
+% The data provided just provides voltage measurments.
+% OCV and SoC provided.
+%% Constants ##############################################################
+const.F=9.648533212e4; %[As/mol]
+const.z=1; %Charge Number for Li-Ionen -> 1
+const.R=8.314462; %[J/mol K]
+%% Personal Input ########################################################
+param.T_amb = 300; % [K]
+% Nominal Capacity
+param.Qnom = 2500; %mAh
 
-%% ============================
-%  Particle Geometry
-%  ============================
-N = options.seg_particle;     % number of radial shells
-R_p = 5e-6;                   % particle radius [m] (typical for graphite/NMC)
+% Effective heat capacity of the electrode composite.
+param.ThermCap = @(w) 800*(1-w) + 700*w; % Gr 800J/kgK, Si 700J/kgK
 
-% Radial node positions (shell boundaries)
-r_edges = linspace(0, R_p, N+1);
+% Heat transfer Coefficient * Surface Area (smaller hA = cell retains heat)
+param.hA = 0.5;
 
-% Shell volumes: V = 4/3*pi*(r_outer^3 - r_inner^3)
-dV = (4/3)*pi*(r_edges(2:end).^3 - r_edges(1:end-1).^3);
+% Ohmic Resistance of the cell
+% Will look at different models for this later, this is just a demo value
+param.R00 = @(w) 0.02 + 0.03 * w; % Higher R, more irreversible heat and SEI thickening.
 
-%% ============================
-%  Diffusion Parameters
-%  ============================
-% Typical maximum lithium concentrations:
-% Graphite: 31,000–34,000 mol/m^3
-% NMC:      48,000–52,000 mol/m^3
+% Placeholder OCV curve for Gr
+param.OCV_Gr = @(z) 0.1 + 0.9*z;
 
-% ---- Anode (Graphite) ----
-param.ParticleDiffusion.Anode.Cmax = 32000;   % mol/m^3
-param.ParticleDiffusion.Anode.Cmin = 500;     % mol/m^3 (almost delithiated)
-param.ParticleDiffusion.Anode.CapaFac = 1.0;
+% Placeholder OCV curve for Si
+param.OCV_Si = @(z) 0.2 + 0.7*z;
 
-% ---- Cathode (NMC) ----
-param.ParticleDiffusion.Cathode.Cmax = 50000; % mol/m^3
-param.ParticleDiffusion.Cathode.Cmin = 2000;  % mol/m^3
-param.ParticleDiffusion.Cathode.CapaFac = 1.0;
+% Placeholder weighted sum of Si and Gr OCV
+param.OCV_tot = @(z,w) w*param.OCV_Si(z) + (1-w)*param.OCV_Gr(z);
 
-%% ============================
-%  Temperature‑Dependent Diffusion Time Constant τ
-%  ============================
-% Arrhenius-type diffusion:
-% D(T) = D_ref * exp( -Ea/R * (1/T - 1/T_ref) )
-% τ ~ R_p^2 / D
+% Entropic coefficient of graphite
+param.dUdt_Gr = @(c) 1e-4*sin(pi*c);
 
-% Typical values:
-D_ref_graphite = 1e-14;   % m^2/s at 25°C
-D_ref_NMC      = 3e-15;   % m^2/s at 25°C
-Ea_graphite    = 35000;   % J/mol
-Ea_NMC         = 40000;   % J/mol
-T_ref          = 298.15;  % K
+% Entropic coefficient of silicon
+param.dUdt_Si = @(c) 2e-4*sin(pi*c);
 
-% % Temperature scaling
-% D_graphite = D_ref_graphite * exp(-Ea_graphite/const.R * (1/T - 1/T_ref));
-% D_NMC      = D_ref_NMC      * exp(-Ea_NMC     /const.R * (1/T - 1/T_ref));
-% 
-% % τ = R_p^2 / D
-% param.ParticleDiffusion.Anode.tau   = R_p^2 / D_graphite;
-% param.ParticleDiffusion.Cathode.tau = R_p^2 / D_NMC;
-% 
-% %% ============================
-% %  Assign dV
-% %  ============================
-% param.ParticleDiffusion.Anode.dV   = dV;
-% param.ParticleDiffusion.Cathode.dV = dV;
+% Weighted micture of entropic coefficients
+param.dUdt = @(c,w) w*param.dUdt_Si(c) + (1-w)*param.dUdt_Gr(c);
+
+%% Capacity ###############################################################
+% Above is a nominal cap being used, leaving this here for later
+% implimentation.
+param.Cell.C=5; %[Ah]
+%% Thermal ################################################################
+param.thermal.m=72e-3;  %cell mass [kg]
+
+param.thermal.mcp= @(w) param.thermal.m * param.ThermCap(w); %thermla mass [J/K]
+
 
 end
+

@@ -1,7 +1,7 @@
 clear
 clc
 % This code allows MATLAB to find all the required files.
-addpath(genpath('IndCds2'));
+addpath(genpath('IndCds'));
 
 [options,msg]=options_ECM_0D;                      %Loads all settings: here you can set initial values, e.g. SoC
 [param,const]=CellParameter_ECM_0D(options);       %Loads cell parameter

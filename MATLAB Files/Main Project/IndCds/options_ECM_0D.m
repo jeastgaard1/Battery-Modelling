@@ -2,68 +2,36 @@ function [options,msg] = options_ECM_0D
 
 %% options:
 %Cell type ################################################################
-options.cell='Sam_50S'; % Cell Type
+options.cell='GrSi'; % Cell Type
 
 % Bools ###################################################################
 options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
-options.bool.Aging=0;
-options.bool.Thermal=0;
-options.bool.cruise=0;
-options.bool.EIS=0; %Use EIS (1) or Pulse (0) data for parametrization
-
-% Cell configuration ######################################################
-options.cell_con.p=1; % number of parallel-connected cells
-options.cell_con.s=1; % number of seriel-connected cells
 
 %Initial Values ###########################################################
-options.ini.T=20; % [°C]
+options.ini.T=297.15; % [°K]
 options.ini.SoC=0.95;% [-] 0-1
 
+%% Si content
+% Si wt.-% options, this will be used later. x6 total
+options.wSi=[0,0.2,0.4,0.6,0.8,1];
 %Aging ####################################################################
-options.ini.SoH_R=1; % [-] 0-1
+options.ini.SoH_R=1; % [-] 0-1 with 1 being healthy
 options.ini.SoH_C=1; % [-] 0-1
 
-%Electrical Model #########################################################
-% FAC  = Factor
-options.Electrical.R_fac=1.2;
-options.Electrical.RC1_fac=1.2;
-options.Electrical.RC2_fac=1.2;
-options.Electrical.RC3_fac=1.15;
-options.Electrical.C_fac=1;
-
-options.Electrical.tau_RC1_fac=1;
-options.Electrical.tau_RC2_fac=1;
-options.Electrical.tau_RC3_fac=1;
-%Solid Diffusion ##########################################################
-options.seg_particle=15; %Particle discretization (number of shells)
-% For more information on the number of shells, look at lecture notes.
-% In case of EIS Data:
-% These are just lists of string values so that we can reference the values
-% later.
-options.Names_ECM={'tau_1';'R_1';'tau_2';'R_2';'tau_3';'R_3';'tau_4';'R_4';'tau_5';'R_5' ...
-    ;'tau_6';'R_6';'tau_7';'R_7';'tau_8';'R_8';'tau_9';'R_9' ...
-    };
-options.Names_ECM_U={'U_1';'U_2';'U_3';'U_4';'U_5';'U_6';'U_7';'U_8';'U_9'};
-options.Names_Elements={'Zarc1';'Zarc2';'WarBurg'};
-
 %Thermal Model ############################################################
+% This might be used later, but is currently not being used.
 options.Thermal.coolingPower=0; %[W]
 
 %Time Step ################################################################
-options.delta_t=1e-0; %[s]
+options.delta_t=60; %[s]
+options.time_steps = 2000; % # of times steps in the provided data.
 
-% Do not change this part #################################################
-%TransferData #############################################################
-% This cannot be changed as it is connected to the provided data stucture.
-options.Transfer.Cell={'I';'U';'T';'SoC';'OCV';'Entropy';'P_control';'P';'h'};
-options.Transfer.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
-options.Transfer.Particle={'c_Li_Anode';'c_Li_Cathode'};
-
-options.Save.Cell={'I';'U';'T';'SoC';'OCV';'Entropy';'P_control';'P'};
-options.Save.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
-options.Save.Particle={'c_Li_Anode';'c_Li_Cathode'};
+%% Save Structure
+options.Save.Cell={'U';'T';'SoC';'OCV'};
 
 % Error MSG ###############################################################
+% Unknown what the point of the error messages are for at this point. Will
+% leave it as originally placed.
 msg.error.T=0;
 msg.error.Tmax=0;
 msg.error.I=0;
