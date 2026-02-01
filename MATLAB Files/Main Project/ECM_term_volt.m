@@ -1,5 +1,7 @@
-function U_term = ECM_term_volt(t,U_RC, param)
-
+% Function that determines the terminal voltage of the volume dependant 2RC
+% Thevian model.
+function U_term = ECM_term_volt(t, U_RC, param)
+% U_RC is desinged to be calculated through ODE45 using MATLAB.
 U_RC1 = U_RC(1);
 U_RC2 = U_RC(2);
 

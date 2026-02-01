@@ -1,20 +1,33 @@
-function [options,msg] = options_ECM_0D
+function [options,msg] = options_ECM_VolThev
 
 %% Simulation options
-options.data.steps = 2000;
+options.data.steps = 2004; % Based on given data.
+options.time_span = 1:1:options.data.steps;
 %% Model options
 %Cell type ################################################################
-options.cell='Sam_50S'; % Cell Type
+options.cell='GrSiNMC 21700class cell'; % Cell Type
 
-% ECM Variables
-options.ECM.R0 = 0; % Base resistance for intial element
-options.ECM.R1 = 0; % Base resistance for first RC element
-options.ECM.R2 = 0; % Base resistance for second RC element
-options.ECM.C1 = 0; % Base capacitance for first RC element
-options.ECM.C2 = 0; % Base capacitance for second RC element
+%% ECM Variables
+% Based on GrSiNMC 21700class cell
+options.ECM.R0 = 5e-3; % Base resistance for intial element
+options.ECM.R1 = 1.5e-3; % Base resistance for first RC element
+options.ECM.R2 = 3e-3; % Base resistance for second RC element
+options.ECM.C1 = 300; % Base capacitance for first RC element
+options.ECM.C2 = 600; % Base capacitance for second RC element
 
-options.ECM.kR0 = 0; % 
-optoins.ECM
+options.ECM.kR0 = 0.5; % Sensitivity of R0 to Si strain.
+options.ECM.kR1 = 0.3; % Sensitivity of R1 to Si strain.
+options.ECM.kR2 = 0.2; % Sensitivity of R2 to Si strain.
+options.ECM.kC1 = 0.2; % Sensitivity of C1 to Si strain.
+options.ECM.kC2 = 0.1; % Sensitivity of C2 to Si strain.
+
+% Anode Values
+options.anode.Qa = 5.5; % Ah
+options.anode.na = 1.0; % Dimensionless Coulumb efficiency
+
+%Initial Values ###########################################################
+options.ini.T=20; % [°C]
+options.ini.SoC=0.95;% [-] 0-1
 
 % Bools ###################################################################
 options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
@@ -22,18 +35,6 @@ options.bool.Aging=0;
 options.bool.Thermal=0;
 options.bool.cruise=0;
 options.bool.EIS=0; %Use EIS (1) or Pulse (0) data for parametrization
-
-% Cell configuration ######################################################
-options.cell_con.p=1; % number of parallel-connected cells
-options.cell_con.s=1; % number of seriel-connected cells
-
-% Anode Values
-options.anode.Qa = 0; % NEED TO BE ADDED
-options.anode.na = 0; % NEED TO BE ADDED
-
-%Initial Values ###########################################################
-options.ini.T=20; % [Â°C]
-options.ini.SoC=0.95;% [-] 0-1
 
 %Aging ####################################################################
 options.ini.SoH_R=1; % [-] 0-1
@@ -50,6 +51,7 @@ options.Electrical.C_fac=1;
 options.Electrical.tau_RC1_fac=1;
 options.Electrical.tau_RC2_fac=1;
 options.Electrical.tau_RC3_fac=1;
+
 %Solid Diffusion ##########################################################
 options.seg_particle=15; %Particle discretization (number of shells)
 % For more information on the number of shells, look at lecture notes.

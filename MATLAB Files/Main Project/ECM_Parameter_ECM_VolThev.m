@@ -1,3 +1,5 @@
+% This ECM currently assumes instantantanious volume expansion so we do not
+% include the calculations with a time constant.
 function [param] = ECM_Parameter_ECM_VolThev(options)
 
 % Retrieve given data in param
@@ -5,34 +7,65 @@ load('Potential_Gr_Si_NMC.mat')
 
 % battery_res.<>(index,1) is how we will index.
 
+% Initial values
+% Currently chaning this value has no effect on the voltage change with our
+% 2RC model.
+param.anode.wtSi = 0.9;
 %% ECM Functions
 
 % Slope of linear SoC in given data. Can be changed if we later determine
 % current was not constant.
-param.Sa = -1 * (potentials.HC.DCH.GrSi_SoC(options.data.steps,1) - potentials.HC.DCH.GrSi_SoC(1,1))/options.data.steps;
+param.Sa = -1 * (...
+            param.potentials.HC.DCH.GrSi_SoC(options.data.steps,1)...
+            - param.potentials.HC.DCH.GrSi_SoC(1,1)) / ...
+            options.data.steps; %#ok<NODEF> <- error suppresion
 
-% Current (const)
+% Current (const) assumed at this time.
 param.I = param.Sa * ( options.anode.Qa / options.anode.na );
 
+disp(param.I);
 % Lithiation of Anode and Cathode
-param.za = @(t) interp1(options.time_span, param.potentials.HC.DCH.GrSi_SoC, t, 'linear', 'extrap');
-param.zc = @(t) interp1(options.time_span, param.potentials.HC.DCH.NHM_SoC, t, 'linear', 'extrap');
+param.za = @(t) interp1(options.time_span,...
+                    param.potentials.HC.DCH.GrSi_SoC,...
+                    t, 'linear', 'extrap');
+param.zc = @(t) interp1(options.time_span,...
+                    param.potentials.HC.DCH.NMC_SoC,...
+                    t, 'linear', 'extrap');
 
 % OCV as a interpolated
-param.OCV_anode = @(t) interp1(param.potentials.HC.DCH.GrSi_SoC(:,1),potentials.HC.DCH.GrSi_OCV(:,1),param.za(t),'pchip','extrap');
-param.OCV_cathode = @(t) interp1(param.potentials.HC.DCH.NHM_SoC(:,1),potentials.HC.DCH.NHM_OCV(:,1),param.zc(t),'pchip','extrap');
+param.OCV_anode = @(t) interp1( ...
+    param.potentials.HC.DCH.GrSi_SoC(:,1), ...
+    param.potentials.HC.DCH.GrSi_OCV(:,1), ...
+    max(0, min(1, param.za(t))), ...   % clamp SoC
+    'pchip');
+
+param.OCV_cathode = @(t) interp1( ...
+    param.potentials.HC.DCH.NMC_SoC(:,1), ...
+    param.potentials.HC.DCH.NMC_OCV(:,1), ...
+    max(0, min(1, param.zc(t))), ...   % clamp SoC
+    'pchip');
+
+param.anode.aSi = 0.3 * param.anode.wtSi; % Dimensionless Max volumetric strain
+%  when Si is fully lithiated. This will need to be changed into a
+% function of wSi.
 
 % Volume strain / expantion
-param.Volexp = @(t) options.anode.aSi * param.za(t); 
+param.Volexp = @(t) param.anode.aSi * param.za(t); 
 
-% Volume-dependent resistance
+% Volume-dependent resistance and RC
 param.R0 = @(t) options.ECM.R0 * (1 + options.ECM.kR0 * param.Volexp(t) );
+
+param.R1 = @(t) options.ECM.R1 * (1 + options.ECM.kR1 * param.Volexp(t) );
+param.R2 = @(t) options.ECM.R2 * (1 + options.ECM.kR2 * param.Volexp(t) );
+
+param.C1 = @(t) options.ECM.C1 * (1 + options.ECM.kC1 * param.Volexp(t) );
+param.C2 = @(t) options.ECM.C2 * (1 + options.ECM.kC2 * param.Volexp(t) );
 
 % Cell voltage
 param.UCell = @(t) param.OCV_cathode(t) - param.OCV_anode(t);
 
-%% TODO
-% Still need to figure out URC1 and URC2 to compute total cell voltage.
+end
+
 
 % if options.bool.EIS==0 %Parametrization based on Pulse Data ###############
 %     if battery_res.P(index,1)<0
@@ -222,5 +255,4 @@ param.UCell = @(t) param.OCV_cathode(t) - param.OCV_anode(t);
 % end
 % %Entropy ##################################################################
 % battery_res.Entropy(index,1)=0;  %Add function
-end
 
