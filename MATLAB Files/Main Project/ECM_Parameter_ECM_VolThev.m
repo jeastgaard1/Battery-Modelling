@@ -1,6 +1,6 @@
 % This ECM currently assumes instantantanious volume expansion so we do not
 % include the calculations with a time constant.
-function [param] = ECM_Parameter_ECM_VolThev(options, wtSi)
+function [param] = ECM_Parameter_ECM_VolThev(options, wtSi, cRate)
 
 % Retrieve given data in param
 load('Potential_Gr_Si_NMC.mat')
@@ -38,21 +38,21 @@ fprintf("Found Half time: %.0f [m]\n",param.time_mid);
 
 % Slope of linear SoC in given data. Can be changed if we later determine
 % current was not constant.
-param.DCH_Sa = -1 * (...
-            param.potentials.HC.DCH.GrSi_SoC(param.time_mid,1)...
+param.DCH_Sa = (-1/(options.data.dt*2))... % Correcting for provided data
+            * ( param.potentials.HC.DCH.GrSi_SoC(param.time_mid,1)...
             - param.potentials.HC.DCH.GrSi_SoC(1,1)) / ...
             (param.time_mid); %#ok<NODEF> <- error suppresion
-
-param.CH_Sa = -1 * (...
-            param.potentials.HC.CH.GrSi_SoC(param.time_mid,1)...
+disp("The DCH Sa is " + param.DCH_Sa);
+param.CH_Sa = (-1/(options.data.dt*2)) * ... % Correcting for provided data
+            (param.potentials.HC.CH.GrSi_SoC(param.time_mid,1)...
             - param.potentials.HC.CH.GrSi_SoC(1,1)) / ...
             (param.time_mid);
 
 %% Current Calculation
 % Current (const) assumed at this time. 3600 = seconds, 60 = minutes, 1 =
 % hours.
-param.DCH_I = param.DCH_Sa * ( options.anode.Qa * options.data.dt / options.anode.na );
-param.CH_I = param.CH_Sa * ( options.anode.Qa * options.data.dt / options.anode.na );
+param.DCH_I = cRate * param.DCH_Sa * ( options.anode.Qa * 60 / options.anode.na );
+param.CH_I = cRate * param.CH_Sa * ( options.anode.Qa * 60 / options.anode.na );
 fprintf("Discharge Current: %.3f[mA]\nInput Current:%.3f[mA]\n",param.DCH_I*1000,param.CH_I*1000);
 
 % Lithiation of Anode and Cathode

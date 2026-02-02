@@ -34,7 +34,7 @@ addpath(genpath('Models'));
 
 [options,msg]=options_ECM_VolThev %Loads all settings
 
-[param]=ECM_Parameter_ECM_VolThev(options,0); %Loads cell parameter with 0% Si
+[param]=ECM_Parameter_ECM_VolThev(options,0,0); %Loads cell parameter with 0% Si
 [battery_res,data_save]=structure_ECM_2RC_VolThev(options);%Loads final strucutre for results
 
 battery_res.Aging.SoH_R(1,1)=1; %Set inital SoH values
@@ -53,32 +53,34 @@ battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 % end
 
 %% ODE for Terminal Voltage
-figure; hold on;
-for w = 1:length(options.wtSi)
-    % Creating new parameters every time with different cell (wt%);
-    [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w)); %Loads cell parameter
-
-    fprintf("Running with Si wt%% = %.2f'\n", param.anode.wtSi);
-
-    x0 = [0; 0];
-    ode_function = @(t,x) ECM_RC_ode(t, x, param);
-    [t_sim, u_sim] = ode15s(ode_function, options.time_span, x0);
-    % Compute terminal voltage
-    V_sim = zeros(size(t_sim));
-    for k = 1:numel(t_sim)
-        V_sim(k) = ECM_term_volt(t_sim(k), u_sim(k,:).', param);
+for cr = 1:length(options.cRates)
+    figure; hold on;
+    for w = 1:length(options.wtSi) % Loop through different Si%
+        % Creating new parameters every time with different cell (wt%);
+        [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w),options.cRates(cr)); %Loads cell parameter
+    
+        fprintf("Running with Si wt%% = %.2f'\n", param.anode.wtSi);
+    
+        x0 = [0; 0];
+        ode_function = @(t,x) ECM_RC_ode(t, x, param);
+        [t_sim, u_sim] = ode15s(ode_function, options.time_span, x0);
+        % Compute terminal voltage
+        V_sim = zeros(size(t_sim));
+        for k = 1:numel(t_sim)
+            V_sim(k) = ECM_term_volt(t_sim(k), u_sim(k,:).', param);
+        end
+    
+        % Plot
+        plot(options.time_vec, V_sim, 'LineWidth', 2, ...
+             'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
+    
     end
-
-    % Plot
-    plot(options.time_vec, V_sim, 'LineWidth', 2, ...
-         'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
-
+    xlabel('Time [min]');
+    ylabel('Terminal Voltage [V]');
+    title(sprintf('GrSi ECM Simulation with differnt Si.-wt%% ( C-Rate of %.1f)',options.cRates(cr)));
+    grid on;
+    legend('show');
 end
-xlabel('Time [min]');
-ylabel('Terminal Voltage [V]');
-title('GrSi ECM Simulation');
-grid on;
-legend('show');
 % %% Plot data ###############################################################
 % figure
 % subplot(1,3,1)
