@@ -25,7 +25,7 @@ param.GrSi_OCV = OCV_unique_GrSi;
 param.NMC_SoC = SoC_unique_NMC;
 param.NMC_OCV = OCV_unique_NMC;
 
-% Fix time to the new length
+% Fix time to the new length due to removed repeated values.
 options.data.steps = length(param.NMC_OCV(:,1));
 options.time_span = 1:1:options.data.steps;
 
@@ -37,12 +37,15 @@ fprintf("Found Half time: %.0f [m]\n",param.time_mid);
 %% ECM Functions
 
 % Slope of linear SoC in given data. Can be changed if we later determine
-% current was not constant.
+% current was not constant. Units are corrected to per minute using dt. *2
+% is used because we have doubled the max/min in the data.
 param.DCH_Sa = (-1/(options.data.dt*2))... % Correcting for provided data
             * ( param.potentials.HC.DCH.GrSi_SoC(param.time_mid,1)...
             - param.potentials.HC.DCH.GrSi_SoC(1,1)) / ...
             (param.time_mid); %#ok<NODEF> <- error suppresion
+
 disp("The DCH Sa is " + param.DCH_Sa);
+
 param.CH_Sa = (-1/(options.data.dt*2)) * ... % Correcting for provided data
             (param.potentials.HC.CH.GrSi_SoC(param.time_mid,1)...
             - param.potentials.HC.CH.GrSi_SoC(1,1)) / ...
@@ -53,9 +56,10 @@ param.CH_Sa = (-1/(options.data.dt*2)) * ... % Correcting for provided data
 % hours.
 param.DCH_I = cRate * param.DCH_Sa * ( options.anode.Qa * 60 / options.anode.na );
 param.CH_I = cRate * param.CH_Sa * ( options.anode.Qa * 60 / options.anode.na );
+
 fprintf("Discharge Current: %.3f[mA]\nInput Current:%.3f[mA]\n",param.DCH_I*1000,param.CH_I*1000);
 
-% Lithiation of Anode and Cathode
+%% Lithiation of Anode and Cathode
 param.za = @(t) interp1(options.time_span,...
                     param.GrSi_SoC,...
                     t, 'linear', 'extrap');
@@ -63,7 +67,7 @@ param.zc = @(t) interp1(options.time_span,...
                     param.NMC_SoC,...
                     t, 'linear', 'extrap');
 
-% OCV as a interpolated
+%% OCV as a interpolated
 param.OCV_anode = @(t) interp1( ...
     param.GrSi_SoC(:,1), ...
     param.GrSi_OCV(:,1), ...
@@ -77,8 +81,6 @@ param.OCV_cathode = @(t) interp1( ...
     'pchip');
 
 param.anode.aSi = 0.3 * param.anode.wtSi; % Dimensionless Max volumetric strain
-%  when Si is fully lithiated. This will need to be changed into a
-% function of wSi.
 
 % Volume strain / expantion
 param.Volexp = @(t) param.anode.aSi * param.za(t); 

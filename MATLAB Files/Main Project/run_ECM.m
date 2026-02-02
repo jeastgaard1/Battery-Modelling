@@ -56,14 +56,16 @@ battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 for cr = 1:length(options.cRates)
     figure; hold on;
     for w = 1:length(options.wtSi) % Loop through different Si%
-        % Creating new parameters every time with different cell (wt%);
-        [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w),options.cRates(cr)); %Loads cell parameter
+        % Creating new parameters every time with different cell (wt%) and
+        % C-Rates for simulation.
+        [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w),options.cRates(cr));
     
         fprintf("Running with Si wt%% = %.2f'\n", param.anode.wtSi);
-    
+        
+        % Set up ODE equation
         x0 = [0; 0];
         ode_function = @(t,x) ECM_RC_ode(t, x, param);
-        [t_sim, u_sim] = ode15s(ode_function, options.time_span, x0);
+        [t_sim, u_sim] = ode45(ode_function, options.time_span, x0); %ode15s is used for stiff simulation if we want to exagerate values.
         % Compute terminal voltage
         V_sim = zeros(size(t_sim));
         for k = 1:numel(t_sim)
