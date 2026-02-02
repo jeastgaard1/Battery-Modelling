@@ -1,12 +1,18 @@
 function [options,msg] = options_ECM_VolThev
 
 %% Simulation options
-options.data.steps = 2004; % Based on given data.
+options.data.steps = 4008; % Based on given data.
+options.total_time = 60; % minutes
+options.time_vec = linspace(...
+    0,options.total_time,...
+    options.data.steps);
 options.time_span = 1:1:options.data.steps;
+options.data.dt = 3600/(options.data.steps/2);
+
 %% Model options
 %Cell type ################################################################
 options.cell='GrSiNMC 21700class cell'; % Cell Type
-
+options.wtSi = [0.15 0.3 0.45 0.6 0.75];
 %% ECM Variables
 % Based on GrSiNMC 21700class cell
 options.ECM.R0 = 5e-3; % Base resistance for intial element
