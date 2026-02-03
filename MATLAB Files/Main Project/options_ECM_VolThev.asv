@@ -33,7 +33,7 @@ options.anode.Qa = 5.5; % Ah
 options.anode.na = 1.0; % Dimensionless Coulumb efficiency
 
 %Initial Values ###########################################################
-options.ini.T=20; % [°C]
+options.ini.T=20; % [Â°C]
 options.ini.SoC=0.95;% [-] 0-1
 
 % Bools ###################################################################
@@ -48,12 +48,10 @@ options.ini.SoH_R=1; % [-] 0-1
 options.ini.SoH_C=1; % [-] 0-1
 
 %Cell Dimensions ##########################################################
-% set initial dimensions such that its always integer of mm so it can be
-% processed in matrix form
-options.fidelity = 1 %amount to segment the cell in each direction, should be kept as an integer to avoid variance
-options.init_thickness = round(21*options.fidelity); % thickness in mm
-options.init_height = round(70*options.fidelity); % height in mm
-options.init_width = round(21*options.fidelity) % width in mm
+options.fidelity = 1 %amount to segment the cell in each direction
+options.init_thickness = 21*options.fidelity; % thickness in mm
+options.init_height = 70*options.fidelity; % height in mm
+options.init_width = 21*options.fidelity % width in mm
 
 %Mechanical ###############################################################
 
