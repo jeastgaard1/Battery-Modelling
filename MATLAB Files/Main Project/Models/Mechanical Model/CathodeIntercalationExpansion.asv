@@ -2,9 +2,8 @@ function [InterdL_cathode] = CathodeIntercalationExpansion(options,param,SoC);
 
 %delete after
 cell_parameters.ParticleDiffusion.Cathode.R = 1;
-cell_parameters.ActivematerialVolumeFraction.Cathode = 1;
-cell_parameters.Thickness.Cathode = 1;
-seg_thickness = 1;
+
+
 
 InterdL_cathode =       zeros(options.init_width,options.init_height,options.init_thickness,options.L);
 y =                     zeros(options.init_width,options.init_height,options.init_thickness,options.L); % stoichiometry factor y in LiCoO2 [-]

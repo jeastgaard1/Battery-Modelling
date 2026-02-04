@@ -14,7 +14,7 @@ dV_p_cathode = zeros(options.seg_thickness,options.seg_height,options.seg_width,
 
 
 % Calculation of the stoichiometry factor y:
-y(:,:,:,:) = cell_parameters.StochiometricNumbers.Cathode_y0 + (cell_parameters.StochiometricNumbers.Cathode_y100 - cell_parameters.StochiometricNumbers.Cathode_y0) * (1-SoC(1,:,:,:,:));
+y(:) = (1-SoC(:,:));
 %y(:,:,:,:) = cell_parameters.StochiometricNumbers.Cathode_y0 + (cell_parameters.StochiometricNumbers.Cathode_y100 - cell_parameters.StochiometricNumbers.Cathode_y0) * (1-simple.Thickness.SOC_Cathode(1,:,:,:,:));
 
 % Interpolation of the volume change "dV_crystal_cathode" in the crystal structure of the anode active material from lookup table as a function of the stoichiometry x:

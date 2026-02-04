@@ -54,6 +54,10 @@ options.fidelity = 1 %amount to segment the cell in each direction, should be ke
 options.init_thickness = round(21*options.fidelity); % thickness in mm
 options.init_height = round(70*options.fidelity); % height in mm
 options.init_width = round(21*options.fidelity) % width in mm
+options.seg_thickness = 1;
+
+options.L = 10 %some sort of length????
+
 
 %Mechanical ###############################################################
 

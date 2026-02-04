@@ -9,12 +9,12 @@ addpath(genpath('Models'));
 [battery_res,data_save]=structure_ECM_2RC_VolThev(options);%Loads final strucutre for results
 
 
-SoC = zeros(options.init_width,options.init_height,options.init_thickness,options.L); 
-% for i = 1:100
-%     % SoC(i, :) targets the i-th row and all columns
-%     % We multiply the range (4.2-2.5) by (i/100) to make it scale with i
-%     SoC(i, :) = [i/100, 2.5 + (4.2 - 2.5) * (i/100)]; 
-% end
+
+SoC = zeros(100, 2); 
+
+for i = 1:100
+    SoC(:, i) = [i/100, 2.5+ ()]; % Stores the index in col 1, and 0.01 to 1.0 in col 2
+end
 
 
 boundarycondition = 0; %0 for fixed, 1 for free
@@ -23,9 +23,10 @@ dL_th_anode = zeros(options.init_width,options.init_height,options.init_thicknes
 dL_th_cathode = zeros(options.init_width,options.init_height,options.init_thickness);
 dL_th_Separator = zeros(options.init_width,options.init_height,options.init_thickness);
 
+
 [InterdL_Anode] = AnodeIntercalationExpansion (options,param,SoC); %removed ,sort
 [InterdL_Cathode] = CathodeIntercalationExpansion(options,param,SoC); %removed ,sort
-%[InterdL_Anode, InterdL_Cathode, dL_total] = TotalExpansion(options,dL_th_anode, InterdL_Anode, dL_th_cathode, InterdL_Cathode, dL_th_Separator,param);
+[InterdL_Anode, InterdL_Cathode, dL_total] = TotalExpansion(options,dL_th_anode, InterdL_Anode, dL_th_cathode, InterdL_Cathode, dL_th_Separator,param);
 
-%[sigma_cell,epsilon_separator,epsilon_BufferLayer,epsilon_anode,epsilon_cathode] = MechForces(deltaL_total, options, param);
+[sigma_cell,epsilon_separator,epsilon_BufferLayer,epsilon_anode,epsilon_cathode] = MechForces(deltaL_total, options, param);
 
