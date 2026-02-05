@@ -7,18 +7,22 @@ options.time_vec = linspace(...
     0,options.total_time,...
     options.data.steps);
 options.time_span = 1:1:options.data.steps;
-options.data.dt = 60/(options.data.steps/2); % time change per step.
+options.data.dt = 3600/(options.data.steps/2); % time change per step.
+
+%% Save Structure
+options.Save.Cell={'U';'SoC';'OCV'};
+options.Save.T = {'T_lowC';'T_midC';'T_highC'};
 
 %% Model options
 %Cell type ################################################################
 options.cell='GrSiNMC 21700class cell'; % Cell Type
 options.wtSi = [0.15 0.3 0.45 0.6 0.75];
-options.cRates = [0.1 1 5];
+options.cRates = [0.1 1 3];
 %% ECM Variables
 % Based on GrSiNMC 21700class cell
-options.ECM.R0 = 5e-3; % Base resistance for intial element
-options.ECM.R1 = 1.5e-3; % Base resistance for first RC element
-options.ECM.R2 = 3e-3; % Base resistance for second RC element
+options.ECM.R0 = 8e-3; % Base resistance for intial element
+options.ECM.R1 = 2.5e-3; % Base resistance for first RC element
+options.ECM.R2 = 5e-3; % Base resistance for second RC element
 options.ECM.C1 = 300; % Base capacitance for first RC element
 options.ECM.C2 = 600; % Base capacitance for second RC element
 
@@ -29,12 +33,14 @@ options.ECM.kC1 = 0.2; % Sensitivity of C1 to Si strain.
 options.ECM.kC2 = 0.1; % Sensitivity of C2 to Si strain.
 
 % Anode Values
-options.anode.Qa = 5.5; % Ah
+options.anode.Qa = 5.5; % Ah Nominal Q
 options.anode.na = 1.0; % Dimensionless Coulumb efficiency
-
-%Initial Values ###########################################################
-options.ini.T=20; % [°C]
+options.anode.hA = 0.3; % Heat transfer Coefficient * Surface Area (smaller hA = cell retains heat)
+options.anode.m = 0.3;  % cell mass [kg]
+% Initial / Enviroment Values ###########################################################
+options.ini.T=297; % [°K]
 options.ini.SoC=0.95;% [-] 0-1
+options.env.T_amb = 297; % Ambient Temperature
 
 % Bools ###################################################################
 options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
@@ -84,9 +90,9 @@ options.Transfer.Cell={'I';'U';'T';'SoC';'OCV';'Entropy';'P_control';'P';'h'};
 options.Transfer.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
 options.Transfer.Particle={'c_Li_Anode';'c_Li_Cathode'};
 
-options.Save.Cell={'I';'U';'T';'SoC';'OCV';'Entropy';'P_control';'P'};
-options.Save.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
-options.Save.Particle={'c_Li_Anode';'c_Li_Cathode'};
+% options.Save.Cell={'I';'U';'T';'SoC';'OCV';'Entropy';'P_control';'P'};
+% options.Save.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
+% options.Save.Particle={'c_Li_Anode';'c_Li_Cathode'};
 
 % Error MSG ###############################################################
 msg.error.T=0;
