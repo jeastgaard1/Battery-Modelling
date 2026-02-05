@@ -1,13 +1,28 @@
 function [battery_res,msg] = ECM_Parameter_ECM_0D(battery_res,param,options,msg)
 %ECM_PARAMETER_ECM_0D Summary of this function goes here
 %   Detailed explanation goes here
-if options.bool.ini==1                                                     %Initialization
+if options.bool.ini==1 || isnan(battery_res.SoC(2,1))                                                     %Initialization
     tempValue=1;
 else
     tempValue=2;
 end
 if options.bool.EIS==0 %Parametrization based on Pulse Data ###############
     if battery_res.P(tempValue,1)<0
+        SOC_in = battery_res.SoC(tempValue,1);
+        T_in   = battery_res.T(tempValue,1);
+        disp(battery_res.SoC)
+        disp(battery_res.T)
+
+        try
+            R_val = feval(param.fit.DCH.R0, SOC_in, T_in);
+        catch ME
+            error('R0 fit failed at SOC=%.4f, T=%.2f K. Original message:\n%s', ...
+                SOC_in, T_in, ME.message);
+        end
+        
+        battery_res.ECM.R(tempValue,1) = R_val;
+
+
         %R0 #######################################################################
         battery_res.ECM.R(tempValue,1)=param.fit.DCH.R0(battery_res.SoC(tempValue,1),battery_res.T(tempValue,1)) ...
             *battery_res.Aging.SoH_R(1,1)*options.Electrical.R_fac;

@@ -30,7 +30,7 @@ options.data.steps = length(param.NMC_OCV(:,1));
 options.time_span = 1:1:options.data.steps;
 
 %% Initial values
-param.anode.wtSi = wtSi; % Temp value that will get overwritten.
+param.anode.wtSi = wtSi;
 param.time_mid = find(param.GrSi_SoC == 0, 1);
 
 fprintf("Found Half time: %.0f [m]\n",param.time_mid);
@@ -54,8 +54,12 @@ param.CH_Sa = (-1/(options.data.dt*2)) * ... % Correcting for provided data
 %% Current Calculation
 % Current (const) assumed at this time. 3600 = seconds, 60 = minutes, 1 =
 % hours.
-param.DCH_I = cRate * param.DCH_Sa * ( options.anode.Qa * 60 / options.anode.na );
-param.CH_I = cRate * param.CH_Sa * ( options.anode.Qa * 60 / options.anode.na );
+param.DCH_I = cRate * param.DCH_Sa * ( options.anode.Qa * 3600 / options.anode.na );
+param.CH_I = cRate * param.CH_Sa * ( options.anode.Qa * 3600 / options.anode.na );
+
+param.I = @(t) (t>param.time_mid)*param.CH_I + (t<=param.time_mid)*param.DCH_I;
+% param.I = @(t) (t*0 +1 )*param.DCH_I;
+
 
 fprintf("Discharge Current: %.3f[mA]\nInput Current:%.3f[mA]\n",param.DCH_I*1000,param.CH_I*1000);
 
@@ -80,7 +84,7 @@ param.OCV_cathode = @(t) interp1( ...
     max(0, min(1, param.zc(t))), ...   % clamp SoC
     'pchip');
 
-param.anode.aSi = 0.3 * param.anode.wtSi; % Dimensionless Max volumetric strain
+param.anode.aSi = 3 * param.anode.wtSi; % Dimensionless Max volumetric strain
 
 % Volume strain / expantion
 param.Volexp = @(t) param.anode.aSi * param.za(t); 
@@ -91,11 +95,46 @@ param.R0 = @(t) options.ECM.R0 * (1 + options.ECM.kR0 * param.Volexp(t) );
 param.R1 = @(t) options.ECM.R1 * (1 + options.ECM.kR1 * param.Volexp(t) );
 param.R2 = @(t) options.ECM.R2 * (1 + options.ECM.kR2 * param.Volexp(t) );
 
+param.Rtot = @(t) param.R0(t) + param.R1(t) + param.R2(t);
+
 param.C1 = @(t) options.ECM.C1 * (1 + options.ECM.kC1 * param.Volexp(t) );
 param.C2 = @(t) options.ECM.C2 * (1 + options.ECM.kC2 * param.Volexp(t) );
 
 % Cell voltage
 param.UCell = @(t) param.OCV_cathode(t) - param.OCV_anode(t);
 
+%% Thermal Parameters
+% These will need to be changed for the merge/integration into the ECM
+% Ohmic Resistance of the cell
+
+% Effective heat capacity of the electrode composite.
+param.ThermCap = @(w) 800*(1-w) + 700*w; % Gr 800J/kgK, Si 700J/kgK
+
+% Will look at different models for this later, this is just a demo value
+param.R00 = @(w) 0.02 + 0.03 * w; % Higher R, more irreversible heat and SEI thickening.
+
+% Placeholder OCV curve for Gr
+param.OCV_Gr = @(z) 0.1 + 0.9*z;
+
+% Placeholder OCV curve for Si
+param.OCV_Si = @(z) 0.2 + 0.7*z;
+
+% Placeholder weighted sum of Si and Gr OCV
+param.OCV_tot = @(z,w) w*param.OCV_Si(z) + (1-w)*param.OCV_Gr(z);
+
+% Entropic coefficient of graphite
+param.dUdt_Gr = @(c) 8e-6*sin(pi*c);
+
+% Entropic coefficient of silicon
+param.dUdt_Si = @(c) 2e-5*sin(pi*c);
+
+% Weighted micture of entropic coefficients
+param.dUdt = @(c,w) w*param.dUdt_Si(c) + (1-w)*param.dUdt_Gr(c);
+
+% Capacity ###############################################################
+% Above is a nominal cap being used, leaving this here for later
+% implimentation.
+
+param.thermal.mcp= @(w) options.anode.m * param.ThermCap(w); %thermla mass [J/K]
 end
 

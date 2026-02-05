@@ -7,7 +7,7 @@ options.cell='Sam_50S'; % Cell Type
 % Bools ###################################################################
 options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
 options.bool.Aging=0;
-options.bool.Thermal=0;
+options.bool.Thermal=1;
 options.bool.cruise=0;
 options.bool.EIS=0; %Use EIS (1) or Pulse (0) data for parametrization
 
