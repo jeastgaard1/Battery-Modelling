@@ -232,10 +232,16 @@ for w_idx = 1:n_wtSi_detailed
     fprintf('  Si %.0f wt-%% (Gr %.0f wt-%%)\n', wtSi, wtG);
     fprintf('─────────────────────────────────────────────────────────────\n');
     
+    % Load ECM parameters
+    wtSi_frac = wtSi / 100;
+    param_ecm = ECM_Parameter_ECM_VolThev(options_ecm, wtSi_frac, );
+    
+    fprintf('  ✓ Loaded ECM parameters\n');
+    
     % Fractions
     frac_Si = wtSi / 100;
     frac_G = wtG / 100;
-    wtSi_frac = wtSi / 100;
+    
     % Composite specific capacity
     Q_composite = frac_Si * s_Si + frac_G * s_G;  % [mAh/g]
     
@@ -273,9 +279,7 @@ for w_idx = 1:n_wtSi_detailed
         C_rate = C_rates(c_idx);
         I_total = C_rate * Q_total;  % [A] - NOW CORRECT!
         
-        % Load ECM parameters
-        param_ecm = ECM_Parameter_ECM_VolThev(options_ecm, wtSi_frac, C_rate);
-        fprintf('  C-rate %.1fC: I = %.4f A (%.0f mA) [ECM loaded for this C-rate]\n', ...
+        fprintf('  C-rate %.1fC: I = %.4f A (%.0f mA)\n', ...
                 C_rate, I_total, I_total*1000);
         
         % SOC loop
