@@ -1,4 +1,4 @@
-function [battery_res] = ThermalVSSi_Model(battery_res,param,options,timeStep,SiW,cRate,U_term)
+function [battery_res] = ThermalVSSi_Model(battery_res,param,options,timeStep,SiW,cRate)
 
 switch cRate
     case 1

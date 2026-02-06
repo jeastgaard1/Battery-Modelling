@@ -70,7 +70,7 @@ for cr = 1:length(options.cRates)
             V_sim(k) = ECM_term_volt(t_sim(k), u_sim(k,:).', param);
             % This Battery_Model is where all models will be called each loop.
             % [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
-            [battery_res] = ThermalVSSi_Model(battery_res,param,options,k,w,cr,V_sim(k));
+            [battery_res] = ThermalVSSi_Model(battery_res,param,options,k,w,cr);
             
             % After every model generation, data will need to be saved so
             % that it can be plotted later.
