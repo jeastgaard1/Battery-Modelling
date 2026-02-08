@@ -11,7 +11,6 @@ addpath(genpath(fullfile(matlab_files_root, 'ECM_0D')));
 clear this_file_path matlab_files_root
 %% ===========================================
 
-
 %% Setup output directory
 output_dir = 'results';
 if ~exist(output_dir, 'dir')
@@ -47,7 +46,7 @@ s_G = 330;         % Graphite specific capacity [mAh/g]
 s_IM = 0;          % Inactive materials (no capacity)
 
 e_Si = 280;        % Silicon expansion [vol-%]
-e_G = 0;           % Graphite expansion (assumed negligible)
+e_G = 10;           % Graphite expansion (assumed negligible)
 e_IM = 0;          % Inactive materials expansion
 
 w_IM = 5;          % Inactive materials weight fraction [wt-%]
