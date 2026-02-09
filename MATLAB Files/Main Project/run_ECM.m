@@ -77,7 +77,27 @@ for cr = 1:length(options.cRates)
             [data_save] = SaveData(battery_res,data_save,options,k,w,cr); %Save Data
             battery_res.time(1,1) = k;
         end
-    
+        % running the Current_Distribution_Model only once but over all time steps
+        % Take entire t_sim array as input
+        % Loop internally through all time points
+        % Return complete results for all times
+        current_dist_time = Current_Distribution_Model(param, options, t_sim);
+        % Store results for this w, cr combination
+        data_save.current_dist.I_Si(:, w, cr) = current_dist_time.I_Si;
+        data_save.current_dist.I_G(:, w, cr) = current_dist_time.I_G;
+        data_save.current_dist.j_Si(:, w, cr) = current_dist_time.j_Si;
+        data_save.current_dist.j_G(:, w, cr) = current_dist_time.j_G;
+        data_save.current_dist.eta(:, w, cr) = current_dist_time.eta;
+        data_save.current_dist.SOC(:, w, cr) = current_dist_time.SOC;
+        data_save.current_dist.frac_Si(:, w, cr) = current_dist_time.frac_Si;
+        data_save.current_dist.frac_G(:, w, cr) = current_dist_time.frac_G;
+
+        %% Volumetric capacity model
+        fprintf('  → Calculating volumetric capacity analysis...\n');
+        vol_cap = Volumetric_Capacity_Model(param, options);
+        data_save.vol_cap{w, cr} = vol_cap;  % No need for if-check anymore
+        fprintf('  ✓ Volumetric capacity analysis complete\n');
+
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
@@ -89,6 +109,256 @@ for cr = 1:length(options.cRates)
     grid on;                         
     legend('show');
 end
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% PLOT CURRENT DISTRIBUTION FOR ALL C-RATES (PRAVEEN)
+%% ═══════════════════════════════════════════════════════════════════════
+fprintf('\n');
+fprintf('═══════════════════════════════════════════════════════════════\n');
+fprintf('  PLOTTING CURRENT DISTRIBUTION RESULTS\n');
+fprintf('═══════════════════════════════════════════════════════════════\n\n');
+
+% Colors for different Si wt%
+colors_Si = [
+    0.85 0.33 0.10;   % orange - 15%
+    0.93 0.69 0.13;   % yellow-gold - 30%
+    0.49 0.18 0.56;   % purple - 45%
+    0.47 0.67 0.19;   % olive green - 60%
+    0.64 0.08 0.18    % dark red - 75%
+];
+
+for cr = 1:length(options.cRates)
+    figure('Position', [100 + cr*50, 100 + cr*50, 1400, 700]);
+    set(gcf, 'Color', 'w');
+    
+    % Get time vector (use discharge only)
+    t_vec = data_save.time(1:param.time_mid - 1, 1);
+    
+    hold on; grid on; box on;
+    
+    % Plot all Si wt% (Graphite = solid, Silicon = dashed)
+    for w = 1:length(options.wtSi)
+        I_G_data = data_save.current_dist.I_G(1:param.time_mid - 1, w, cr);
+        I_Si_data = data_save.current_dist.I_Si(1:param.time_mid - 1, w, cr);
+        
+        % Graphite (solid)
+        plot(t_vec, I_G_data * 1000, '-', ...
+             'LineWidth', 2.5, ...
+             'Color', colors_Si(w,:), ...
+             'DisplayName', sprintf('Gr (Si %.0f wt%%)', options.wtSi(w)*100));
+        
+        % Silicon (dashed)
+        plot(t_vec, I_Si_data * 1000, '--', ...
+             'LineWidth', 2.5, ...
+             'Color', colors_Si(w,:), ...
+             'DisplayName', sprintf('Si (Si %.0f wt%%)', options.wtSi(w)*100));
+    end
+    
+    xlabel('Time [min]', 'FontSize', 14, 'FontWeight', 'bold');
+    ylabel('Current [mA]', 'FontSize', 14, 'FontWeight', 'bold');
+    title(sprintf('Current Distribution at C-Rate %.1f (Solid = Graphite, Dashed = Silicon)', ...
+          options.cRates(cr)), 'FontSize', 16, 'FontWeight', 'bold');
+    legend('Location', 'eastoutside', 'FontSize', 10, 'NumColumns', 1);
+    set(gca, 'FontSize', 12, 'LineWidth', 1.5);
+    xlim([min(t_vec), max(t_vec)]);
+    
+    fprintf('✓ C-rate %.1f current distribution plot created\n', options.cRates(cr));
+end
+
+fprintf('✓ All current distribution plots complete!\n\n');
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% PLOT VOLUMETRIC CAPACITY CASE STUDIES (PRAVEEN - Otero et al. 2018 Style)
+%% ═══════════════════════════════════════════════════════════════════════
+fprintf('\n');
+fprintf('═══════════════════════════════════════════════════════════════\n');
+fprintf('  PLOTTING VOLUMETRIC CAPACITY CASE STUDIES\n');
+fprintf('═══════════════════════════════════════════════════════════════\n\n');
+
+% Extract data for FIRST C-rate only (typically done in papers)
+cr = 1;  % Use first C-rate for case study plots
+
+% Initialize arrays
+wtSi_array = zeros(length(options.wtSi), 1);
+G_A_array = zeros(length(options.wtSi), 1);
+V_A_case1 = zeros(length(options.wtSi), 1);
+P_A_req_case1 = zeros(length(options.wtSi), 1);
+
+% Extract data from data_save for Case 1
+for w = 1:length(options.wtSi)
+    vol_cap = data_save.vol_cap{w, cr};
+    
+    wtSi_array(w) = vol_cap.wtSi;
+    G_A_array(w) = vol_cap.G_A;
+    
+    % Case 1
+    V_A_case1(w) = vol_cap.case1.V_A;
+    P_A_req_case1(w) = vol_cap.case1.P_A_required;
+end
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% FIGURE 1: CASE STUDY 1 - Zero Expansion (E=0 & P_ALi=0)
+%% ═══════════════════════════════════════════════════════════════════════
+figure('Position', [100, 100, 1200, 700]);
+set(gcf, 'Color', 'w');
+
+% Left Y-axis: Volumetric and Gravimetric Capacity
+yyaxis left;
+hold on; grid on; box on;
+
+% Plot Volumetric Capacity (Red)
+plot(wtSi_array, V_A_case1, '-', 'LineWidth', 3, ...
+     'Color', [0.85 0.33 0.10], 'DisplayName', 'V_A (Si/Graphite)');
+
+% Plot Gravimetric Capacity (Green)
+plot(wtSi_array, G_A_array, '-', 'LineWidth', 3, ...
+     'Color', [0.47 0.67 0.19], 'DisplayName', 'G_A (Si/Graphite)');
+
+ylabel('Specific Capacity V_A in mAh/cm^3 & G_A in mAh/g', ...
+       'FontSize', 12, 'FontWeight', 'bold');
+ylim([0, 3500]);
+set(gca, 'YColor', 'k');
+
+% Right Y-axis: Initial Porosity
+yyaxis right;
+hold on;
+
+% Plot Required Porosity (Blue)
+plot(wtSi_array, P_A_req_case1, '-', 'LineWidth', 3, ...
+     'Color', [0.00 0.45 0.74], 'DisplayName', 'P_A (Si/Graphite)');
+
+% Mark P_A = 30% intersection (black square)
+P_A_target = 30;
+idx_30 = find(P_A_req_case1 >= P_A_target, 1, 'first');
+if ~isempty(idx_30)
+    plot(wtSi_array(idx_30), P_A_target, 'ks', ...
+         'MarkerSize', 12, 'MarkerFaceColor', 'k', 'DisplayName', 'data1');
+    
+    % Vertical dashed line at this Si%
+    xline(wtSi_array(idx_30), '--k', 'LineWidth', 1.5);
+    
+    % Horizontal dashed line at P_A = 30%
+    yline(P_A_target, '--k', 'LineWidth', 1.5);
+end
+
+ylabel('Initial electrode porosity P_A (vol-%)', ...
+       'FontSize', 12, 'FontWeight', 'bold');
+ylim([0, 100]);
+set(gca, 'YColor', [0.00 0.45 0.74]);
+
+% X-axis
+xlabel('Silicon w_{Si} amount (wt-%)', 'FontSize', 12, 'FontWeight', 'bold');
+xlim([0, 100]);
+
+% Title
+title('Case-Study 1: Zero Expansion (E=0 & P_{ALi}=0)', ...
+      'FontSize', 14, 'FontWeight', 'bold');
+
+% Legend
+legend('Location', 'northwest', 'FontSize', 11);
+set(gca, 'FontSize', 11, 'LineWidth', 1.5);
+
+fprintf('✓ Case Study 1 plot created\n');
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% FIGURE 2: CASE STUDY 2 - Constant Porosity (P_A = P_ALi)
+%% ═══════════════════════════════════════════════════════════════════════
+
+% Define porosity levels to plot
+porosity_levels = [0, 10, 20, 30, 40];  % vol-%
+n_porosity = length(porosity_levels);
+
+% Colors for different porosities (from blue to green)
+colors_porosity = [
+    0.00 0.45 0.74;   % Blue - 0%
+    0.85 0.33 0.10;   % Red - 10%
+    0.93 0.69 0.13;   % Orange - 20%
+    0.49 0.18 0.56;   % Purple - 30%
+    0.47 0.67 0.19;   % Green - 40%
+];
+
+% Calculate V_A for each porosity level
+V_A_case2_all = zeros(length(options.wtSi), n_porosity);
+E_case2 = zeros(length(options.wtSi), 1);
+
+for w = 1:length(options.wtSi)
+    vol_cap = data_save.vol_cap{w, cr};
+    
+    % Get expansion (same for all porosity levels)
+    E_case2(w) = vol_cap.case2.E;
+    
+    % Calculate V_A for different porosities
+    for p = 1:n_porosity
+        P_current = porosity_levels(p) / 100;  % Convert to fraction
+        
+        % Recalculate density with this porosity
+        w_Si = vol_cap.wtSi / 100;
+        w_G = (100 - vol_cap.wtSi - options.materials.w_IM) / 100;
+        w_IM = options.materials.w_IM / 100;
+        
+        rho_Si = options.materials.rho_Si;
+        rho_G = options.materials.rho_G;
+        rho_IM = options.materials.rho_IM;
+        e_Si = options.materials.e_Si;
+        e_G = options.materials.e_G;
+        
+        % Density of lithiated electrode with this porosity
+        rho_ALi = (100 - porosity_levels(p)) / ...
+                  (w_Si/rho_Si + w_G/rho_G + w_IM/rho_IM + ...
+                   w_Si*e_Si/(rho_Si*100) + w_G*e_G/(rho_G*100));
+        
+        % Volumetric capacity
+        V_A_case2_all(w, p) = vol_cap.G_A * rho_ALi;
+    end
+end
+
+figure('Position', [150, 150, 1400, 700]);
+set(gcf, 'Color', 'w');
+
+% Left Y-axis: Volumetric Capacity
+yyaxis left;
+hold on; grid on; box on;
+
+% Plot V_A for each porosity level
+for p = 1:n_porosity
+    plot(wtSi_array, V_A_case2_all(:, p), '-', 'LineWidth', 3, ...
+         'Color', colors_porosity(p, :), ...
+         'DisplayName', sprintf('Porosity %d%%', porosity_levels(p)));
+end
+
+ylabel('Volumetric capacity V_A (mAh/cm^3)', ...
+       'FontSize', 12, 'FontWeight', 'bold');
+ylim([0, 2400]);
+set(gca, 'YColor', 'k');
+
+% Right Y-axis: Expansion Tolerance
+yyaxis right;
+hold on;
+
+% Plot Expansion (thick blue line)
+plot(wtSi_array, E_case2, '-', 'LineWidth', 4, ...
+     'Color', [0.00 0.45 0.74], 'DisplayName', 'Expansion tolerance factor');
+
+ylabel('Expansion Tolerance E (vol-%)', ...
+       'FontSize', 12, 'FontWeight', 'bold');
+ylim([0, 250]);
+set(gca, 'YColor', [0.00 0.45 0.74]);
+
+% X-axis
+xlabel('Silicon w_{Si} amount (wt-%)', 'FontSize', 12, 'FontWeight', 'bold');
+xlim([0, 100]);
+
+% Title
+title('Case-Study 2: Constant Porosity (P_A = P_{ALi})', ...
+      'FontSize', 14, 'FontWeight', 'bold');
+
+% Legend
+legend('Location', 'northwest', 'FontSize', 11);
+set(gca, 'FontSize', 11, 'LineWidth', 1.5);
+
+fprintf('✓ Case Study 2 plot created\n');
+fprintf('✓ All volumetric capacity case study plots complete!\n\n');
+
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.
 for cr = 1:length(options.cRates)
