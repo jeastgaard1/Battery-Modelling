@@ -50,16 +50,30 @@ options.ini.SoH_C=1; % [-] 0-1
 %Cell Dimensions ##########################################################
 % set initial dimensions such that its always integer of mm so it can be
 % processed in matrix form
-options.fidelity = 1 %amount to segment the cell in each direction, should be kept as an integer to avoid variance
-options.init_thickness = round(21*options.fidelity); % thickness in mm
-options.init_height = round(70*options.fidelity); % height in mm
-options.init_width = round(21*options.fidelity) % width in mm
-options.seg_thickness = 1;
 
-options.L = 10 %some sort of length????
 
 
 %Mechanical ###############################################################
+options.boundary_condition = fixed % free or fixed
+d0_anode = 60e-6;              % Initial Anode thickness [m]
+d0_cathode = 50e-6;            % Initial Cathode thickness [m]
+d0_sep = 15e-6;                % Initial Separator thickness [m]
+Area = 0.01;                   % Cell area [m^2]
+
+% Expansion Coefficients
+eps_Si = 3.00;   % 300% for Silicon
+eps_Gr = 0.10;   % 10% for Graphite
+eps_NMC = 0.02;  % ~2% for NMC (assumed)
+
+% Mechanical Properties (E-Moduli in Pa)
+E_anode = 10e9;    
+E_cathode = 20e9;
+E_sep = 1e9;
+if strcmp(BoundaryCondition, 'fixed')
+    E_env = inf; % Fixed constraint (Slide 59)
+else
+    E_env = 0;   % Free expansion
+end
 
 
 %Electrical Model #########################################################

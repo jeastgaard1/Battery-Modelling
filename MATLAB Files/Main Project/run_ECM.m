@@ -40,6 +40,8 @@ addpath(genpath('Models'));
 battery_res.Aging.SoH_R(1,1)=1; %Set inital SoH values
 battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 
+
+
 %% To be implimented later on. This will be the main simulation center.
 % for i=1:options.data.steps
 %     [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
