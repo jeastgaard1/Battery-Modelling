@@ -57,6 +57,7 @@ for i=1:1e5
     else
         break;
     end
+    
     [battery_res,msg,options] = Battery_Model_ECM_0D(battery_res,param,msg,power,options,const); %Cell ECM Model
     
     if msg.interupt.Umin==1 || msg.interupt.Umax==1 %Stop simulation

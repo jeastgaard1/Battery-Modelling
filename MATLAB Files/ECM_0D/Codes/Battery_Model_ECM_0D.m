@@ -25,7 +25,7 @@ if options.bool.ini==1 %function called first time -> Cell states will be initia
     
     %Diffusion ############################################################
     [battery_res,msg] = Solid_Diffusion_ECM_0D(battery_res,param,const,options,msg);
-    
+
     options.bool.ini=0; %Initilization done
 else %calculation base on last value
     %time #####################################################

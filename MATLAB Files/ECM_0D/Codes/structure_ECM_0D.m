@@ -34,26 +34,15 @@ calc_value=struct(...
          'SoH_C',zeros(1,1) ...
         ,'SoH_R',zeros(1,1) ...
         )...
-     ,'Particle',struct(...
-        'c_Li_Anode',zeros(2,options.seg_particle)...
-        ,'c_Li_Cathode',zeros(2,options.seg_particle)...
-      )...
-    );
+     );
 % Structure to Save Data ##################################################
 data_save.time=zeros(1,1);
 % All of this is just initializing all the saved information to zero so
 % that the program allocates approperate amount of space.
-%Cell
+
+% Cell, currently this is the only data being saved.
 for trans=1:length(options.Save.Cell(:,1))
     data_save.(options.Save.Cell{trans,:})=zeros(1,1);
-end
-%ECM
-for trans=1:length(options.Save.ECM(:,1))
-    data_save.ECM.(options.Save.ECM{trans,:})(1,:)=zeros(1,1);
-end
-%Particle
-for trans=1:length(options.Save.Particle(:,1))
-    data_save.Particle.(options.Save.Particle{trans,:})=zeros(1,options.seg_particle);
 end
 end
 
