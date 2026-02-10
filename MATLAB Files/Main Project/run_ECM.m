@@ -92,11 +92,13 @@ for cr = 1:length(options.cRates)
         data_save.current_dist.frac_Si(:, w, cr) = current_dist_time.frac_Si;
         data_save.current_dist.frac_G(:, w, cr) = current_dist_time.frac_G;
 
-        %% Volumetric capacity model
-        fprintf('  → Calculating volumetric capacity analysis...\n');
-        vol_cap = Volumetric_Capacity_Model(param, options);
-        data_save.vol_cap{w, cr} = vol_cap;  % No need for if-check anymore
-        fprintf('  ✓ Volumetric capacity analysis complete\n');
+        %% Volumetric capacity model - ONLY for first C-rate
+        if cr == 1
+            fprintf('  → Calculating volumetric capacity analysis...\n');
+            vol_cap = Volumetric_Capacity_Model(param, options);
+            data_save.vol_cap{w} = vol_cap;  % Store only once per Si wt%
+            fprintf('  ✓ Volumetric capacity analysis complete\n');
+        end
 
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
@@ -113,59 +115,36 @@ end
 %% ═══════════════════════════════════════════════════════════════════════
 %% PLOT CURRENT DISTRIBUTION FOR ALL C-RATES (PRAVEEN)
 %% ═══════════════════════════════════════════════════════════════════════
-fprintf('\n');
-fprintf('═══════════════════════════════════════════════════════════════\n');
-fprintf('  PLOTTING CURRENT DISTRIBUTION RESULTS\n');
-fprintf('═══════════════════════════════════════════════════════════════\n\n');
-
-% Colors for different Si wt%
-colors_Si = [
-    0.85 0.33 0.10;   % orange - 15%
-    0.93 0.69 0.13;   % yellow-gold - 30%
-    0.49 0.18 0.56;   % purple - 45%
-    0.47 0.67 0.19;   % olive green - 60%
-    0.64 0.08 0.18    % dark red - 75%
-];
-
 for cr = 1:length(options.cRates)
     figure('Position', [100 + cr*50, 100 + cr*50, 1400, 700]);
     set(gcf, 'Color', 'w');
     
-    % Get time vector (use discharge only)
+    % Select 4 time snapshots
     t_vec = data_save.time(1:param.time_mid - 1, 1);
+    time_snapshots = round(linspace(1, length(t_vec), 4));
     
-    hold on; grid on; box on;
-    
-    % Plot all Si wt% (Graphite = solid, Silicon = dashed)
-    for w = 1:length(options.wtSi)
-        I_G_data = data_save.current_dist.I_G(1:param.time_mid - 1, w, cr);
-        I_Si_data = data_save.current_dist.I_Si(1:param.time_mid - 1, w, cr);
+    for t_idx = 1:4
+        subplot(2, 2, t_idx);
         
-        % Graphite (solid)
-        plot(t_vec, I_G_data * 1000, '-', ...
-             'LineWidth', 2.5, ...
-             'Color', colors_Si(w,:), ...
-             'DisplayName', sprintf('Gr (Si %.0f wt%%)', options.wtSi(w)*100));
+        I_Si_snapshot = data_save.current_dist.I_Si(time_snapshots(t_idx), :, cr) * 1000;
+        I_G_snapshot = data_save.current_dist.I_G(time_snapshots(t_idx), :, cr) * 1000;
         
-        % Silicon (dashed)
-        plot(t_vec, I_Si_data * 1000, '--', ...
-             'LineWidth', 2.5, ...
-             'Color', colors_Si(w,:), ...
-             'DisplayName', sprintf('Si (Si %.0f wt%%)', options.wtSi(w)*100));
+        b = bar([I_G_snapshot; I_Si_snapshot]', 'grouped');
+        b(1).FaceColor = [0.47 0.67 0.19];  % Graphite
+        b(2).FaceColor = [0.85 0.33 0.10];  % Silicon
+        
+        set(gca, 'XTickLabel', arrayfun(@(x) sprintf('%.0f%%', x*100), options.wtSi, 'UniformOutput', false));
+        xlabel('Si Content [wt-%]', 'FontSize', 11, 'FontWeight', 'bold');
+        ylabel('Current [mA]', 'FontSize', 11, 'FontWeight', 'bold');
+        title(sprintf('Time = %.1f min', t_vec(time_snapshots(t_idx))), ...
+              'FontSize', 12, 'FontWeight', 'bold');
+        legend('Graphite', 'Silicon', 'Location', 'best');
+        grid on;
     end
     
-    xlabel('Time [min]', 'FontSize', 14, 'FontWeight', 'bold');
-    ylabel('Current [mA]', 'FontSize', 14, 'FontWeight', 'bold');
-    title(sprintf('Current Distribution at C-Rate %.1f (Solid = Graphite, Dashed = Silicon)', ...
-          options.cRates(cr)), 'FontSize', 16, 'FontWeight', 'bold');
-    legend('Location', 'eastoutside', 'FontSize', 10, 'NumColumns', 1);
-    set(gca, 'FontSize', 12, 'LineWidth', 1.5);
-    xlim([min(t_vec), max(t_vec)]);
-    
-    fprintf('✓ C-rate %.1f current distribution plot created\n', options.cRates(cr));
+    sgtitle(sprintf('Current Distribution Snapshots at C-Rate %.1f', options.cRates(cr)), ...
+            'FontSize', 16, 'FontWeight', 'bold');
 end
-
-fprintf('✓ All current distribution plots complete!\n\n');
 
 %% ═══════════════════════════════════════════════════════════════════════
 %% PLOT VOLUMETRIC CAPACITY CASE STUDIES (PRAVEEN - Otero et al. 2018 Style)
@@ -186,8 +165,7 @@ P_A_req_case1 = zeros(length(options.wtSi), 1);
 
 % Extract data from data_save for Case 1
 for w = 1:length(options.wtSi)
-    vol_cap = data_save.vol_cap{w, cr};
-    
+    vol_cap = data_save.vol_cap{w};
     wtSi_array(w) = vol_cap.wtSi;
     G_A_array(w) = vol_cap.G_A;
     
@@ -277,39 +255,18 @@ colors_porosity = [
     0.47 0.67 0.19;   % Green - 40%
 ];
 
-% Calculate V_A for each porosity level
+% Extract V_A for each porosity level (already calculated in model!)
 V_A_case2_all = zeros(length(options.wtSi), n_porosity);
 E_case2 = zeros(length(options.wtSi), 1);
 
 for w = 1:length(options.wtSi)
-    vol_cap = data_save.vol_cap{w, cr};
+    vol_cap = data_save.vol_cap{w};
     
-    % Get expansion (same for all porosity levels)
+    % Get expansion
     E_case2(w) = vol_cap.case2.E;
     
-    % Calculate V_A for different porosities
-    for p = 1:n_porosity
-        P_current = porosity_levels(p) / 100;  % Convert to fraction
-        
-        % Recalculate density with this porosity
-        w_Si = vol_cap.wtSi / 100;
-        w_G = (100 - vol_cap.wtSi - options.materials.w_IM) / 100;
-        w_IM = options.materials.w_IM / 100;
-        
-        rho_Si = options.materials.rho_Si;
-        rho_G = options.materials.rho_G;
-        rho_IM = options.materials.rho_IM;
-        e_Si = options.materials.e_Si;
-        e_G = options.materials.e_G;
-        
-        % Density of lithiated electrode with this porosity
-        rho_ALi = (100 - porosity_levels(p)) / ...
-                  (w_Si/rho_Si + w_G/rho_G + w_IM/rho_IM + ...
-                   w_Si*e_Si/(rho_Si*100) + w_G*e_G/(rho_G*100));
-        
-        % Volumetric capacity
-        V_A_case2_all(w, p) = vol_cap.G_A * rho_ALi;
-    end
+    % Get pre-calculated V_A for all porosities
+    V_A_case2_all(w, :) = vol_cap.case2.V_A_array;
 end
 
 figure('Position', [150, 150, 1400, 700]);
