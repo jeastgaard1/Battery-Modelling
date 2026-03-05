@@ -48,20 +48,6 @@ battery_res.T.T_highC(1,1) = options.ini.T;
 battery_res.Aging.SoH_R(1,1)=1; %Set inital SoH values
 battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 
-
-
-%% To be implimented later on. This will be the main simulation center.
-% for i=1:options.data.steps
-%     [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
-% 
-%     if msg.interupt.Umin==1 || msg.interupt.Umax==1 %Stop simulation
-%         break;
-%     end
-% 
-%     [data_save] = SaveData(battery_res,data_save,options,i); %Save Data
-% 
-% end
-
 %% ODE for Terminal Voltage
 for cr = 1:length(options.cRates)
     figure; hold on;
@@ -86,6 +72,9 @@ for cr = 1:length(options.cRates)
             % [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
             [battery_res] = ThermalVSSi_Model(battery_res,param,options,k,w,cr);
             
+            %Davids Model Call
+            mech_res = Mechanical_Model_Function(options, options.wtSi(w), options.cRates(cr));
+            data_save.mech_results{cr, w} = mech_res;
             % After every model generation, data will need to be saved so
             % that it can be plotted later.
             [data_save] = SaveData(battery_res,data_save,options,k,w,cr); %Save Data
@@ -329,6 +318,79 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
 fprintf('✓ Case Study 2 plot created\n');
 fprintf('✓ All volumetric capacity case study plots complete!\n\n');
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% OVERALL PACK MECHANICAL COMPARISON: Silicon Content Effects -David
+%% ═══════════════════════════════════════════════════════════════════════
+%% ═══════════════════════════════════════════════════════════════════════
+%% FIGURE 1: MICRO-SCALE PARTICLE DYNAMICS (4 SUBPLOTS)
+%% ═══════════════════════════════════════════════════════════════════════
+figure('Name', 'Micro-Scale: Particle Stress Analysis', 'Color', 'w', 'Position', [100 100 1100 800]);
+cr_idx = 2; % Looking at 1C rate
+cmap = jet(length(options.wtSi));
+
+% 1. Surface Tangential Stress vs SoC (Effect of wtSi)
+subplot(2,2,1); hold on; grid on;
+for w = 1:length(options.wtSi)
+    res = data_save.mech_results{cr_idx, w};
+    plot(res.SoC*100, res.sigma_t_surface/1e6, 'Color', cmap(w,:), 'LineWidth', 2);
+end
+title('Surface Tangential Stress (\sigma_t)'); xlabel('SoC [%]'); ylabel('MPa');
+
+% 2. Peak Stress Sensitivity (C-rate vs wtSi)
+subplot(2,2,2); hold on; grid on;
+for cr = 1:length(options.cRates)
+    peaks = arrayfun(@(w) data_save.mech_results{cr, w}.max_particle_stress/1e6, 1:length(options.wtSi));
+    plot(options.wtSi*100, peaks, '-o', 'LineWidth', 1.5, 'DisplayName', sprintf('%.1fC', options.cRates(cr)));
+end
+title('Max Particle Stress vs Content'); xlabel('Si Content [wt%]'); ylabel('MPa'); legend('show');
+
+% 3. Radial Stress Profile (at 100% SoC)
+subplot(2,2,3); hold on; grid on;
+res_mid = data_save.mech_results{cr_idx, 1}; % Low Si
+res_high = data_save.mech_results{cr_idx, end}; % High Si
+plot(res_mid.r_norm, res_mid.sigma_t_surface(end)*ones(size(res_mid.r_norm))/1e6, '--k', 'DisplayName', 'Baseline');
+plot(res_high.r_norm, res_high.sigma_t_surface(end)*ones(size(res_high.r_norm))/1e6, '-r', 'LineWidth', 2, 'DisplayName', 'High Si');
+title('Stress Distribution Across Radius'); xlabel('Normalized Radius (r/R)'); ylabel('MPa');
+
+% 4. Concentration Gradient Snapshot
+subplot(2,2,4); hold on; grid on;
+bar(categorical(options.wtSi*100), peaks, 'FaceColor', [0.8 0.2 0.2]);
+title('Structural Failure Risk Map'); xlabel('Si wt%'); ylabel('Peak Tension [MPa]');
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% FIGURE 2: MACRO-SCALE PACK DYNAMICS (4 SUBPLOTS)
+%% ═══════════════════════════════════════════════════════════════════════
+figure('Name', 'Macro-Scale: Pack/Cell Analysis', 'Color', 'w', 'Position', [150 150 1100 800]);
+
+% 1. Total Cell Thickening
+subplot(2,2,1); hold on; grid on;
+for w = 1:length(options.wtSi)
+    res = data_save.mech_results{cr_idx, w};
+    plot(res.SoC*100, res.thickening*1e6, 'Color', cmap(w,:), 'LineWidth', 2);
+end
+title('Pack "Breathing" (Expansion)'); xlabel('SoC [%]'); ylabel('\Delta L [\mum]');
+
+% 2. Stack Stress (If BoundaryCondition = 'fixed')
+subplot(2,2,2); hold on; grid on;
+for w = 1:length(options.wtSi)
+    res = data_save.mech_results{cr_idx, w};
+    plot(res.SoC*100, res.stack_stress/1e6, 'Color', cmap(w,:), 'LineWidth', 2);
+end
+title('Internal Stack Pressure'); xlabel('SoC [%]'); ylabel('Stress [MPa]');
+
+% 3. Expansion vs Si-Content (at 100% SoC)
+subplot(2,2,3); grid on;
+final_exp = arrayfun(@(w) data_save.mech_results{cr_idx, w}.thickening(end)*1e6, 1:length(options.wtSi));
+bar(categorical(options.wtSi*100), final_exp, 'FaceColor', [0.2 0.4 0.6]);
+title('Max Swelling at 100% SoC'); xlabel('Si wt%'); ylabel('\Delta L [\mum]');
+
+% 4. Pack Mechanical Risk Map
+subplot(2,2,4);
+[W, C] = meshgrid(options.wtSi*100, options.cRates);
+Z = zeros(size(W));
+for cr=1:length(options.cRates); for w=1:length(options.wtSi); Z(cr,w)=data_save.mech_results{cr,w}.max_particle_stress/1e6; end; end
+surf(W, C, Z); colorbar; title('Pack Risk Surface'); xlabel('Si%'); ylabel('C-rate'); zlabel('MPa');
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.

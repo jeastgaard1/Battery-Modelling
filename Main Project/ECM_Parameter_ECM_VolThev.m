@@ -51,19 +51,6 @@ param.CH_Sa = (-1/(options.data.dt*2)) * ... % Correcting for provided data
             - param.potentials.HC.CH.GrSi_SoC(1,1)) / ...
             (param.time_mid);
 
-%% Stress and Strain
-
-if options.boundary_condition == 0
-        youngm = 0;
-    else if options.boundary_condition == 1
-        youngm=inf; 
-    else options.boundary_condition == 2
-        youngm = 6*10^2; %Standard youngs modulus
-end
-
-fprintf("BC is %.1f\n", options.boundary_condition)
-fprintf("Young Modulus is = %.2f'\n", youngm)
-
 %% Current Calculation
 % Current (const) assumed at this time. 3600 = seconds, 60 = minutes, 1 =
 % hours.

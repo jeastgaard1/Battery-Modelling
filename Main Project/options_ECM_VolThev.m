@@ -89,35 +89,6 @@ options.bool.EIS=0; %Use EIS (1) or Pulse (0) data for parametrization
 options.ini.SoH_R=1; % [-] 0-1
 options.ini.SoH_C=1; % [-] 0-1
 
-%Cell Dimensions ##########################################################
-% set initial dimensions such that its always integer of mm so it can be
-% processed in matrix form
-
-
-
-%Mechanical ###############################################################
-options.boundary_condition = fixed % free or fixed
-d0_anode = 60e-6;              % Initial Anode thickness [m]
-d0_cathode = 50e-6;            % Initial Cathode thickness [m]
-d0_sep = 15e-6;                % Initial Separator thickness [m]
-Area = 0.01;                   % Cell area [m^2]
-
-% Expansion Coefficients
-eps_Si = 3.00;   % 300% for Silicon
-eps_Gr = 0.10;   % 10% for Graphite
-eps_NMC = 0.02;  % ~2% for NMC (assumed)
-
-% Mechanical Properties (E-Moduli in Pa)
-E_anode = 10e9;    
-E_cathode = 20e9;
-E_sep = 1e9;
-if strcmp(BoundaryCondition, 'fixed')
-    E_env = inf; % Fixed constraint (Slide 59)
-else
-    E_env = 0;   % Free expansion
-end
-
-
 %Electrical Model #########################################################
 % FAC  = Factor
 options.Electrical.R_fac=1.2;
@@ -130,7 +101,27 @@ options.Electrical.tau_RC1_fac=1;
 options.Electrical.tau_RC2_fac=1;
 options.Electrical.tau_RC3_fac=1;
 
-%Solid Diffusion ##########################################################
+%% Mechanical & Geometric Parameters
+options.mech.BoundaryCondition = 'fixed'; % 'fixed' or 'free' (free is recommended for realistic stress)
+options.mech.d0_anode = 65e-6;           % [m]
+options.mech.d0_cathode = 55e-6;         % [m]
+options.mech.d0_sep = 12e-6;             % [m]
+options.mech.Area = 0.012;               % [m^2]
+
+% Material Stiffness (Young's Moduli in Pa)
+options.mech.E_anode = 12e9; 
+options.mech.E_cathode = 25e9; 
+options.mech.E_sep = 1.2e9; 
+
+% Particle Properties
+options.mech.R_p = 5e-6;                 % [m]
+options.mech.D_s = 1e-14;                % [m^2/s]
+options.mech.Omega = 3.497e-6;           % [m^3/mol]
+options.mech.nu = 0.3;                   % Poisson ratio
+options.mech.rho_avg = 2000;             % [kg/m^3] average density
+options.mech.Capacity_theo = 372 * 3600; % [As/kg] Graphite theoretical
+
+%% Solid Diffusion ##########################################################
 options.seg_particle=15; %Particle discretization (number of shells)
 % For more information on the number of shells, look at lecture notes.
 %In case of EIS Data:
