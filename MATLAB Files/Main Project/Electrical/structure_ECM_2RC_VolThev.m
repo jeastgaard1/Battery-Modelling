@@ -58,13 +58,5 @@ data_save.current_dist.j_G     = zeros(n_wtSi, n_cRate);
 data_save.current_dist.frac_Si = zeros(n_wtSi, n_cRate);
 data_save.current_dist.frac_G  = zeros(n_wtSi, n_cRate);
 
-%ECM
-% for trans=1:length(options.Save.ECM(:,1))
-%     data_save.ECM.(options.Save.ECM{trans,:})(1,:)=zeros(1,1);
-% end
-% %Particle
-% for trans=1:length(options.Save.Particle(:,1))
-%     data_save.Particle.(options.Save.Particle{trans,:})=zeros(1,options.seg_particle);
-% end
 end
 

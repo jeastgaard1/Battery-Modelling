@@ -26,6 +26,6 @@ if isfield(battery_res, 'current_dist')
     data_save.current_dist.j_G(run_variable, siW, cr)     = battery_res.current_dist.j_G;
     data_save.current_dist.frac_Si(run_variable, siW, cr) = battery_res.current_dist.frac_Si;
     data_save.current_dist.frac_G(run_variable, siW, cr)  = battery_res.current_dist.frac_G;
-
 end
+
 end
