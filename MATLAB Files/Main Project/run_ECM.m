@@ -115,36 +115,35 @@ end
 %% ═══════════════════════════════════════════════════════════════════════
 %% PLOT CURRENT DISTRIBUTION FOR ALL C-RATES (PRAVEEN)
 %% ═══════════════════════════════════════════════════════════════════════
+%% SIMPLIFIED CURRENT DISTRIBUTION PLOT (ONE SNAPSHOT PER C-RATE)
+figure('Position', [100, 100, 1200, 400]);
+set(gcf, 'Color', 'w');
+
 for cr = 1:length(options.cRates)
-    figure('Position', [100 + cr*50, 100 + cr*50, 1400, 700]);
-    set(gcf, 'Color', 'w');
+    subplot(1, length(options.cRates), cr);
     
-    % Select 4 time snapshots
-    t_vec = data_save.time(1:param.time_mid - 1, 1);
-    time_snapshots = round(linspace(1, length(t_vec), 4));
+    % Use mid-time snapshot (representative of entire discharge)
+    mid_time_idx = round(size(data_save.current_dist.I_Si, 1)/2);
     
-    for t_idx = 1:4
-        subplot(2, 2, t_idx);
-        
-        I_Si_snapshot = data_save.current_dist.I_Si(time_snapshots(t_idx), :, cr) * 1000;
-        I_G_snapshot = data_save.current_dist.I_G(time_snapshots(t_idx), :, cr) * 1000;
-        
-        b = bar([I_G_snapshot; I_Si_snapshot]', 'grouped');
-        b(1).FaceColor = [0.47 0.67 0.19];  % Graphite
-        b(2).FaceColor = [0.85 0.33 0.10];  % Silicon
-        
-        set(gca, 'XTickLabel', arrayfun(@(x) sprintf('%.0f%%', x*100), options.wtSi, 'UniformOutput', false));
-        xlabel('Si Content [wt-%]', 'FontSize', 11, 'FontWeight', 'bold');
-        ylabel('Current [mA]', 'FontSize', 11, 'FontWeight', 'bold');
-        title(sprintf('Time = %.1f min', t_vec(time_snapshots(t_idx))), ...
-              'FontSize', 12, 'FontWeight', 'bold');
+    I_Si_snapshot = data_save.current_dist.I_Si(mid_time_idx, :, cr) * 1000;
+    I_G_snapshot = data_save.current_dist.I_G(mid_time_idx, :, cr) * 1000;
+    
+    b = bar([I_G_snapshot; I_Si_snapshot]', 'grouped');
+    b(1).FaceColor = [0.47 0.67 0.19];  % Graphite
+    b(2).FaceColor = [0.85 0.33 0.10];  % Silicon
+    
+    set(gca, 'XTickLabel', arrayfun(@(x) sprintf('%.0f%%', x*100), options.wtSi, 'UniformOutput', false));
+    xlabel('Si Content [wt-%]', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Current [mA]', 'FontSize', 11, 'FontWeight', 'bold');
+    title(sprintf('C-Rate %.1f', options.cRates(cr)), 'FontSize', 12, 'FontWeight', 'bold');
+    
+    if cr == 1
         legend('Graphite', 'Silicon', 'Location', 'best');
-        grid on;
     end
-    
-    sgtitle(sprintf('Current Distribution Snapshots at C-Rate %.1f', options.cRates(cr)), ...
-            'FontSize', 16, 'FontWeight', 'bold');
+    grid on;
 end
+
+sgtitle('Current Distribution vs Silicon Content', 'FontSize', 16, 'FontWeight', 'bold');
 
 %% ═══════════════════════════════════════════════════════════════════════
 %% PLOT VOLUMETRIC CAPACITY CASE STUDIES (PRAVEEN - Otero et al. 2018 Style)
@@ -166,6 +165,7 @@ P_A_req_case1 = zeros(length(options.wtSi), 1);
 % Extract data from data_save for Case 1
 for w = 1:length(options.wtSi)
     vol_cap = data_save.vol_cap{w};
+    
     wtSi_array(w) = vol_cap.wtSi;
     G_A_array(w) = vol_cap.G_A;
     
