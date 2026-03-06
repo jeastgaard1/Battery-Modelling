@@ -69,28 +69,14 @@ for cr = 1:length(options.cRates)
         for k = 1:numel(t_sim)
             V_sim(k) = ECM_term_volt(t_sim(k), u_sim(k,:).', param);
             % This Battery_Model is where all models will be called each loop.
-            % [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
+            %[battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
             [battery_res] = ThermalVSSi_Model(battery_res,param,options,k,w,cr);
-            
+            [battery_res] = Current_Distribution_Model(battery_res, param, options, k);
             % After every model generation, data will need to be saved so
             % that it can be plotted later.
-            [data_save] = SaveData(battery_res,data_save,options,k,w,cr); %Save Data
+            [data_save] = SaveData(battery_res, data_save, options, k, w, cr); %Save Data
             battery_res.time(1,1) = k;
         end
-        % running the Current_Distribution_Model only once but over all time steps
-        % Take entire t_sim array as input
-        % Loop internally through all time points
-        % Return complete results for all times
-        current_dist_time = Current_Distribution_Model(param, options, t_sim);
-        % Store results for this w, cr combination
-        data_save.current_dist.I_Si(:, w, cr) = current_dist_time.I_Si;
-        data_save.current_dist.I_G(:, w, cr) = current_dist_time.I_G;
-        data_save.current_dist.j_Si(:, w, cr) = current_dist_time.j_Si;
-        data_save.current_dist.j_G(:, w, cr) = current_dist_time.j_G;
-        data_save.current_dist.eta(:, w, cr) = current_dist_time.eta;
-        data_save.current_dist.SOC(:, w, cr) = current_dist_time.SOC;
-        data_save.current_dist.frac_Si(:, w, cr) = current_dist_time.frac_Si;
-        data_save.current_dist.frac_G(:, w, cr) = current_dist_time.frac_G;
 
         %% Volumetric capacity model - ONLY for first C-rate
         if cr == 1
@@ -113,30 +99,28 @@ for cr = 1:length(options.cRates)
 end
 
 %% ═══════════════════════════════════════════════════════════════════════
-%% PLOT CURRENT DISTRIBUTION FOR ALL C-RATES (PRAVEEN)
+%% PLOT CURRENT DISTRIBUTION FOR ALL C-RATES 
 %% ═══════════════════════════════════════════════════════════════════════
-%% SIMPLIFIED CURRENT DISTRIBUTION PLOT (ONE SNAPSHOT PER C-RATE)
 figure('Position', [100, 100, 1200, 400]);
 set(gcf, 'Color', 'w');
 
 for cr = 1:length(options.cRates)
     subplot(1, length(options.cRates), cr);
-    
-    % Use mid-time snapshot (representative of entire discharge)
-    mid_time_idx = round(size(data_save.current_dist.I_Si, 1)/2);
-    
-    I_Si_snapshot = data_save.current_dist.I_Si(mid_time_idx, :, cr) * 1000;
-    I_G_snapshot = data_save.current_dist.I_G(mid_time_idx, :, cr) * 1000;
-    
+
+    % data_save.current_dist.I_Si is (n_time x n_wtSi x n_cRates)
+    % All time rows are identical (time-invariant), so take row 1
+    I_Si_snapshot = squeeze(data_save.current_dist.I_Si(1, :, cr)) * 1000;  % [mA]
+    I_G_snapshot  = squeeze(data_save.current_dist.I_G(1, :, cr))  * 1000;  % [mA]
+
     b = bar([I_G_snapshot; I_Si_snapshot]', 'grouped');
     b(1).FaceColor = [0.47 0.67 0.19];  % Graphite
     b(2).FaceColor = [0.85 0.33 0.10];  % Silicon
-    
+
     set(gca, 'XTickLabel', arrayfun(@(x) sprintf('%.0f%%', x*100), options.wtSi, 'UniformOutput', false));
     xlabel('Si Content [wt-%]', 'FontSize', 11, 'FontWeight', 'bold');
-    ylabel('Current [mA]', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Current [mA]',      'FontSize', 11, 'FontWeight', 'bold');
     title(sprintf('C-Rate %.1f', options.cRates(cr)), 'FontSize', 12, 'FontWeight', 'bold');
-    
+
     if cr == 1
         legend('Graphite', 'Silicon', 'Location', 'best');
     end
@@ -146,7 +130,7 @@ end
 sgtitle('Current Distribution vs Silicon Content', 'FontSize', 16, 'FontWeight', 'bold');
 
 %% ═══════════════════════════════════════════════════════════════════════
-%% PLOT VOLUMETRIC CAPACITY CASE STUDIES (PRAVEEN - Otero et al. 2018 Style)
+%% PLOT VOLUMETRIC CAPACITY CASE STUDIES 
 %% ═══════════════════════════════════════════════════════════════════════
 fprintf('\n');
 fprintf('═══════════════════════════════════════════════════════════════\n');

@@ -47,14 +47,16 @@ end
 
 %% Initialize Current Distribution Arrays (PRAVEEN)
 % Dimensions: (time_steps, Si_wt%, C_rates)
-data_save.current_dist.I_Si = [];
-data_save.current_dist.I_G = [];
-data_save.current_dist.j_Si = [];
-data_save.current_dist.j_G = [];
-data_save.current_dist.eta = [];
-data_save.current_dist.SOC = [];
-data_save.current_dist.frac_Si = [];
-data_save.current_dist.frac_G = [];
+
+n_wtSi  = length(options.wtSi);
+n_cRate = length(options.cRates);
+
+data_save.current_dist.I_Si    = zeros(n_wtSi, n_cRate);
+data_save.current_dist.I_G     = zeros(n_wtSi, n_cRate);
+data_save.current_dist.j_Si    = zeros(n_wtSi, n_cRate);
+data_save.current_dist.j_G     = zeros(n_wtSi, n_cRate);
+data_save.current_dist.frac_Si = zeros(n_wtSi, n_cRate);
+data_save.current_dist.frac_G  = zeros(n_wtSi, n_cRate);
 
 %ECM
 % for trans=1:length(options.Save.ECM(:,1))
