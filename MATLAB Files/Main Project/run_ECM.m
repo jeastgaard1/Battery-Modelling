@@ -72,37 +72,17 @@ for cr = 1:length(options.cRates)
             %[battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
             [battery_res] = ThermalVSSi_Model(battery_res,param,options,k,w,cr);
             [battery_res] = Current_Distribution_Model(battery_res, param, options, k);
+            % Set vol_cap into battery_res at k==1, cr==1 only
+            if cr == 1 && k == 1
+                battery_res.vol_cap = Volumetric_Capacity_Model(param, options);
+                fprintf('  vol_cap set for w=%d, V_A_case1=%.2f mAh/cm3\n', w, battery_res.vol_cap.case1.V_A);
+            end
             % After every model generation, data will need to be saved so
             % that it can be plotted later.
             [data_save] = SaveData(battery_res, data_save, options, k, w, cr); %Save Data
             battery_res.time(1,1) = k;
         end
-
-        %% Volumetric capacity model - ONLY for first C-rate
-        if cr == 1
-            %fprintf('  → Calculating volumetric capacity analysis...\n');
-            vc = Volumetric_Capacity_Model(param, options);
-            data_save.vol_cap.wtSi(w)  = vc.wtSi;
-            data_save.vol_cap.G_A(w)   = vc.G_A;
-            data_save.vol_cap.P_A(w)   = vc.P_A;
-
-            data_save.vol_cap.case1.V_A(w)          = vc.case1.V_A;
-            data_save.vol_cap.case1.P_A_required(w) = vc.case1.P_A_required;
-            data_save.vol_cap.case1.P_ALi(w)        = vc.case1.P_ALi;
-            data_save.vol_cap.case1.E(w)            = vc.case1.E;
-
-            data_save.vol_cap.case2.V_A(w)          = vc.case2.V_A;
-            data_save.vol_cap.case2.V_A_array(w,:)  = vc.case2.V_A_array;
-            data_save.vol_cap.case2.P_ALi(w)        = vc.case2.P_ALi;
-            data_save.vol_cap.case2.E(w)            = vc.case2.E;
-
-            data_save.vol_cap.case3.V_A(w)          = vc.case3.V_A;
-            data_save.vol_cap.case3.P_ALi(w)        = vc.case3.P_ALi;
-            data_save.vol_cap.case3.E(w)            = vc.case3.E;
-            %data_save.vol_cap{w} = vol_cap;  % Store only once per Si wt%
-            %fprintf('  ✓ Volumetric capacity analysis complete\n');
-        end
-
+        
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
@@ -154,27 +134,8 @@ sgtitle('Current Distribution vs Silicon Content', 'FontSize', 16, 'FontWeight',
 % fprintf('  PLOTTING VOLUMETRIC CAPACITY CASE STUDIES\n');
 % fprintf('═══════════════════════════════════════════════════════════════\n\n');
 
-% Extract data for FIRST C-rate only (typically done in papers)
-%cr = 1;  % Use first C-rate for case study plots
-
-% Initialize arrays
-% wtSi_array = zeros(length(options.wtSi), 1);
-% G_A_array = zeros(length(options.wtSi), 1);
-% V_A_case1 = zeros(length(options.wtSi), 1);
-% P_A_req_case1 = zeros(length(options.wtSi), 1);
-
-% Extract data from data_save for Case 1
-% for w = 1:length(options.wtSi)
-%     vol_cap = data_save.vol_cap{w};
-% 
-%     wtSi_array(w) = vol_cap.wtSi;
-%     G_A_array(w) = vol_cap.G_A;
-% 
-%     % Case 1
-%     V_A_case1(w) = vol_cap.case1.V_A;
-%     P_A_req_case1(w) = vol_cap.case1.P_A_required;
-% end
-% NEW — data_save.vol_cap is now a struct, arrays already built
+%Extract data for FIRST C-rate only 
+%data_save.vol_cap is now a struct
 wtSi_array    = data_save.vol_cap.wtSi;
 G_A_array     = data_save.vol_cap.G_A;
 V_A_case1     = data_save.vol_cap.case1.V_A;
@@ -261,20 +222,9 @@ colors_porosity = [
 ];
 
 % Extract V_A for each porosity level (already calculated in model!)
-% V_A_case2_all = zeros(length(options.wtSi), n_porosity);
-% E_case2 = zeros(length(options.wtSi), 1);
-
-% for w = 1:length(options.wtSi)
-%     vol_cap = data_save.vol_cap{w};
-% 
-%     % Get expansion
-%     E_case2(w) = vol_cap.case2.E;
-% 
-%     % Get pre-calculated V_A for all porosities
-%     V_A_case2_all(w, :) = vol_cap.case2.V_A_array;
-% end
 E_case2       = data_save.vol_cap.case2.E;
 V_A_case2_all = data_save.vol_cap.case2.V_A_array;
+
 figure('Position', [150, 150, 1400, 700]);
 set(gcf, 'Color', 'w');
 
