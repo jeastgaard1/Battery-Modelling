@@ -1,4 +1,4 @@
-function [current_dist_time] = Current_Distribution_Model(param, options, t_sim)
+function [battery_res] = Current_Distribution_Model(param, options, t_sim)
 %% ═══════════════════════════════════════════════════════════════════════
 %% CURRENT DISTRIBUTION ANALYSIS (ECM + BUTLER-VOLMER)
 %% ═══════════════════════════════════════════════════════════════════════
@@ -7,21 +7,12 @@ function [current_dist_time] = Current_Distribution_Model(param, options, t_sim)
 % kinetics.
 
 %% Extract material properties from options structure
-rho_Si = options.materials.rho_Si;
-rho_G = options.materials.rho_G;
 s_Si = options.materials.s_Si;
 s_G = options.materials.s_G;
-w_IM = options.materials.w_IM;
 
 %% Get current configuration
-wtSi = param.anode.wtSi * 100;    % Silicon weight fraction [%]
-wtG = 100 - wtSi - w_IM;          % Graphite weight fraction [%]
-
-if wtG < 0
-    warning('Invalid composition: wtG < 0 for wtSi = %.1f wt-%%', wtSi);
-    current_dist_time = [];
-    return;
-end
+wtSi = param.anode.wtSi;    % Silicon weight fraction [%]
+wtG = options.materials.w_IM;          % Graphite weight fraction [%]
 
 %% Physical constants (from options.constants)
 F = options.constants.F;           % Faraday constant [C/mol]
@@ -29,8 +20,8 @@ R_gas = options.constants.R_gas;   % Gas constant [J/(mol·K)]
 T = options.ini.T;                 % Temperature [K]
 
 %% Material properties (convert to g/m³)
-rho_Si_cd = rho_Si * 1e6;
-rho_G_cd = rho_G * 1e6;
+rho_Si_cd = options.materials.rho_Si * 1e6;
+rho_G_cd = options.materials.rho_G * 1e6;
 
 %% Kinetic parameters (from options.kinetics)
 i0_Si_ref = options.kinetics.i0_Si;     % Silicon exchange current density [A/m²]
@@ -47,20 +38,16 @@ epsilon_cd = options.electrode.epsilon;  % Electrode porosity [-]
 %% Fixed total capacity (from options.anode)
 Q_total_fixed = options.anode.Qa;  % Total capacity [Ah]
 
-%% Calculate total capacity based on weight fractions
-frac_Si = wtSi / 100;  % Fraction
-frac_G = wtG / 100;    % Fraction
-
 % Composite specific capacity
-Q_composite = frac_Si * s_Si + frac_G * s_G;  % [mAh/g]
+Q_composite = wtSi * s_Si + wtG * s_G;  % [mAh/g]
 
 % Calculate mass needed for target capacity
 m_total = Q_total_fixed * 1000 / Q_composite;  % [g]
 
 %% Calculate volumes and surface areas 
 % Volumes
-V_Si = frac_Si * m_total / rho_Si_cd;
-V_G = frac_G * m_total / rho_G_cd;
+V_Si = wtSi * m_total / rho_Si_cd;
+V_G = wtG * m_total / rho_G_cd;
 V_total = V_Si + V_G;         % [m³]
 
 % Specific surface areas per unit volume
@@ -133,19 +120,13 @@ for k = 1:n_time
 end
 
 %% Calculate derived quantities
-frac_Si_current = (I_Si_all ./ (I_Si_all + I_G_all)) * 100;
-frac_G_current = (I_G_all ./ (I_Si_all + I_G_all)) * 100;
+wtSi_current = (I_Si_all ./ (I_Si_all + I_G_all)) * 100;
+wtG_current = (I_G_all ./ (I_Si_all + I_G_all)) * 100;
 
 %% Store results
-current_dist_time.I_Si = I_Si_all;
-current_dist_time.I_G = I_G_all;
-current_dist_time.j_Si = j_Si_all;
-current_dist_time.j_G = j_G_all;
-current_dist_time.eta = eta_all;
-current_dist_time.R_total = R_total_all;
-current_dist_time.SOC = SOC_all;
-current_dist_time.frac_Si = frac_Si_current;
-current_dist_time.frac_G = frac_G_current;
-current_dist_time.wtSi = wtSi;
-current_dist_time.I_total = I_total;
+battery_res.I_Si = I_Si_all;
+battery_res.I_G = I_G_all;
+battery_res.j_Si = j_Si_all;
+battery_res.j_G = j_G_all;
+battery_res.I_tot = I_total;
 end

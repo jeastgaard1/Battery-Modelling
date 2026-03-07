@@ -11,7 +11,6 @@ for trans=1:length(options.Save.Cell(:,1))
         =battery_res.(options.Save.Cell{trans,:})(1,1);
 end
 
-
 data_save.T.(options.Save.T{cr,:})(run_variable,siW) ...
     =battery_res.T.(options.Save.T{cr,:})(1,:);
 

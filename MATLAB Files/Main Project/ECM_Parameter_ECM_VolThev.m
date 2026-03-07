@@ -31,6 +31,7 @@ options.time_span = 1:1:options.data.steps;
 
 %% Initial values
 param.anode.wtSi = wtSi;
+param.cRate = cRate;
 param.time_mid = find(param.GrSi_SoC == 0, 1);
 
 fprintf("Found Half time: %.0f [m]\n",param.time_mid);
