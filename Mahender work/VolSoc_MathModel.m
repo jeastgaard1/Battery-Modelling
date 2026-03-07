@@ -1,7 +1,8 @@
 %% VolSoc_MathModel.m
 % =========================================================================
 % Pure math-driven Volume vs SOC model for a SiGr composite anode.
-% NO data files used. ALL parameters derived from crystal structures.
+% Volume expansion derived from crystal structures (pure math).
+% SOC grid pulled from project data (Potential_Gr_Si_NMC.mat).
 %
 % Core equations:
 %   Graphite:  alpha_Gr = (d_LiC6 - d_C6) / d_C6        [d-spacing]
@@ -14,19 +15,22 @@ clear; clc; close all;
 
 %% Pull Si weight fractions from project options
 mainProjDir = fullfile(fileparts(mfilename('fullpath')), ...
-    '..', 'Battery-Modelling', 'MATLAB Files', 'Main Project');
+    '..', 'MATLAB Files', 'Main Project');
 addpath(genpath(mainProjDir));
 
 [options, ~] = options_ECM_VolThev();
 wtSi_list = [0, options.wtSi];   % prepend 0% (pure graphite) as baseline
 
+% Pull SOC from project potential data (discharge curve)
+load('Potential_Gr_Si_NMC.mat', 'param');
+soc_raw = param.potentials.HC.DCH.GrSi_SoC;
+soc = sort(unique(soc_raw(soc_raw >= 0 & soc_raw <= 1)));   % filter, sort ascending
+
 rmpath(genpath(mainProjDir));
 
 fprintf('Si weight fractions: %s\n', ...
     strjoin(compose('%.0f%%', wtSi_list*100), ', '));
-
-%% SOC grid
-soc = linspace(0, 1, 500)';
+fprintf('SOC points: %d  (from Potential_Gr_Si_NMC.mat)\n', numel(soc));
 
 %% Material densities [g/cm^3] — standard crystallographic values
 rho_Si = 2.329;   % silicon, diamond cubic
