@@ -70,34 +70,18 @@ for cr = 1:length(options.cRates)
             % This Battery_Model is where all models will be called each loop.
             [battery_res,options] = Battery_Model_ECM_VolThev(battery_res,param,options,k); %Cell ECM Model
             
+            % Set vol_cap into battery_res at k==1, cr==1 only
+            if cr == 1 && k == 1
+                battery_res.vol_cap = Volumetric_Capacity_Model(param, options);
+                fprintf('  vol_cap set for w=%d, V_A_case1=%.2f mAh/cm3\n', w, battery_res.vol_cap.case1.V_A);
+            end
+            
             % After every model generation, data will need to be saved so
             % that it can be plotted later.
-            [data_save] = SaveData(battery_res,data_save,options,k,w,cr); %Save Data
+            [data_save] = SaveData(battery_res, data_save, options, k, w, cr); %Save Data
             battery_res.time(1,1) = k;
         end
-        % running the Current_Distribution_Model only once but over all time steps
-        % Take entire t_sim array as input
-        % Loop internally through all time points
-        % Return complete results for all times
-        current_dist_time = Current_Distribution_Model(param, options, t_sim);
-        % Store results for this w, cr combination
-        data_save.current_dist.I_Si(:, w, cr) = current_dist_time.I_Si;
-        data_save.current_dist.I_G(:, w, cr) = current_dist_time.I_G;
-        data_save.current_dist.j_Si(:, w, cr) = current_dist_time.j_Si;
-        data_save.current_dist.j_G(:, w, cr) = current_dist_time.j_G;
-        % data_save.current_dist.eta(:, w, cr) = current_dist_time.eta;
-        % data_save.current_dist.SOC(:, w, cr) = current_dist_time.SOC;
-        % data_save.current_dist.frac_Si(:, w, cr) = current_dist_time.frac_Si;
-        % data_save.current_dist.frac_G(:, w, cr) = current_dist_time.frac_G;
-
-        %% Volumetric capacity model - ONLY for first C-rate
-        if cr == 1
-            fprintf('  → Calculating volumetric capacity analysis...\n');
-            vol_cap = Volumetric_Capacity_Model(param, options);
-            data_save.vol_cap{w} = vol_cap;  % Store only once per Si wt%
-            fprintf('  ✓ Volumetric capacity analysis complete\n');
-        end
-
+        
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
@@ -111,67 +95,50 @@ for cr = 1:length(options.cRates)
 end
 
 %% ═══════════════════════════════════════════════════════════════════════
-%% PLOT CURRENT DISTRIBUTION FOR ALL C-RATES (PRAVEEN)
+%% PLOT CURRENT DISTRIBUTION FOR ALL C-RATES 
 %% ═══════════════════════════════════════════════════════════════════════
+figure('Position', [100, 100, 1200, 400]);
+set(gcf, 'Color', 'w');
+
 for cr = 1:length(options.cRates)
-    figure('Position', [100 + cr*50, 100 + cr*50, 1400, 700]);
-    set(gcf, 'Color', 'w');
-    
-    % Select 4 time snapshots
-    t_vec = data_save.time(1:param.time_mid - 1, 1);
-    time_snapshots = round(linspace(1, length(t_vec), 4));
-    
-    for t_idx = 1:4
-        subplot(2, 2, t_idx);
-        
-        I_Si_snapshot = data_save.current_dist.I_Si(time_snapshots(t_idx), :, cr) * 1000;
-        I_G_snapshot = data_save.current_dist.I_G(time_snapshots(t_idx), :, cr) * 1000;
-        
-        b = bar([I_G_snapshot; I_Si_snapshot]', 'grouped');
-        b(1).FaceColor = [0.47 0.67 0.19];  % Graphite
-        b(2).FaceColor = [0.85 0.33 0.10];  % Silicon
-        
-        set(gca, 'XTickLabel', arrayfun(@(x) sprintf('%.0f%%', x*100), options.wtSi, 'UniformOutput', false));
-        xlabel('Si Content [wt-%]', 'FontSize', 11, 'FontWeight', 'bold');
-        ylabel('Current [mA]', 'FontSize', 11, 'FontWeight', 'bold');
-        title(sprintf('Time = %.1f min', t_vec(time_snapshots(t_idx))), ...
-              'FontSize', 12, 'FontWeight', 'bold');
+    subplot(1, length(options.cRates), cr);
+
+    % data_save.current_dist.I_Si is (n_time x n_wtSi x n_cRates)
+    % All time rows are identical (time-invariant), so take row 1
+    I_Si_snapshot = squeeze(data_save.current_dist.I_Si(1, :, cr)) * 1000;  % [mA]
+    I_G_snapshot  = squeeze(data_save.current_dist.I_G(1, :, cr))  * 1000;  % [mA]
+
+    b = bar([I_G_snapshot; I_Si_snapshot]', 'grouped');
+    b(1).FaceColor = [0.47 0.67 0.19];  % Graphite
+    b(2).FaceColor = [0.85 0.33 0.10];  % Silicon
+
+    set(gca, 'XTickLabel', arrayfun(@(x) sprintf('%.0f%%', x*100), options.wtSi, 'UniformOutput', false));
+    xlabel('Si Content [wt-%]', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Current [mA]',      'FontSize', 11, 'FontWeight', 'bold');
+    title(sprintf('C-Rate %.1f', options.cRates(cr)), 'FontSize', 12, 'FontWeight', 'bold');
+
+    if cr == 1
         legend('Graphite', 'Silicon', 'Location', 'best');
-        grid on;
     end
-    
-    sgtitle(sprintf('Current Distribution Snapshots at C-Rate %.1f', options.cRates(cr)), ...
-            'FontSize', 16, 'FontWeight', 'bold');
+    grid on;
 end
 
+sgtitle('Current Distribution vs Silicon Content', 'FontSize', 16, 'FontWeight', 'bold');
+
 %% ═══════════════════════════════════════════════════════════════════════
-%% PLOT VOLUMETRIC CAPACITY CASE STUDIES (PRAVEEN - Otero et al. 2018 Style)
+%% PLOT VOLUMETRIC CAPACITY CASE STUDIES 
 %% ═══════════════════════════════════════════════════════════════════════
-fprintf('\n');
-fprintf('═══════════════════════════════════════════════════════════════\n');
-fprintf('  PLOTTING VOLUMETRIC CAPACITY CASE STUDIES\n');
-fprintf('═══════════════════════════════════════════════════════════════\n\n');
+% fprintf('\n');
+% fprintf('═══════════════════════════════════════════════════════════════\n');
+% fprintf('  PLOTTING VOLUMETRIC CAPACITY CASE STUDIES\n');
+% fprintf('═══════════════════════════════════════════════════════════════\n\n');
 
-% Extract data for FIRST C-rate only (typically done in papers)
-cr = 1;  % Use first C-rate for case study plots
-
-% Initialize arrays
-wtSi_array = zeros(length(options.wtSi), 1);
-G_A_array = zeros(length(options.wtSi), 1);
-V_A_case1 = zeros(length(options.wtSi), 1);
-P_A_req_case1 = zeros(length(options.wtSi), 1);
-
-% Extract data from data_save for Case 1
-for w = 1:length(options.wtSi)
-    vol_cap = data_save.vol_cap{w};
-    wtSi_array(w) = vol_cap.wtSi;
-    G_A_array(w) = vol_cap.G_A;
-    
-    % Case 1
-    V_A_case1(w) = vol_cap.case1.V_A;
-    P_A_req_case1(w) = vol_cap.case1.P_A_required;
-end
-
+%Extract data for FIRST C-rate only 
+%data_save.vol_cap is now a struct
+wtSi_array    = data_save.vol_cap.wtSi;
+G_A_array     = data_save.vol_cap.G_A;
+V_A_case1     = data_save.vol_cap.case1.V_A;
+P_A_req_case1 = data_save.vol_cap.case1.P_A_required;
 %% ═══════════════════════════════════════════════════════════════════════
 %% FIGURE 1: CASE STUDY 1 - Zero Expansion (E=0 & P_ALi=0)
 %% ═══════════════════════════════════════════════════════════════════════
@@ -234,7 +201,7 @@ title('Case-Study 1: Zero Expansion (E=0 & P_{ALi}=0)', ...
 legend('Location', 'northwest', 'FontSize', 11);
 set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
-fprintf('✓ Case Study 1 plot created\n');
+%fprintf('✓ Case Study 1 plot created\n');
 
 %% ═══════════════════════════════════════════════════════════════════════
 %% FIGURE 2: CASE STUDY 2 - Constant Porosity (P_A = P_ALi)
@@ -254,18 +221,8 @@ colors_porosity = [
 ];
 
 % Extract V_A for each porosity level (already calculated in model!)
-V_A_case2_all = zeros(length(options.wtSi), n_porosity);
-E_case2 = zeros(length(options.wtSi), 1);
-
-for w = 1:length(options.wtSi)
-    vol_cap = data_save.vol_cap{w};
-    
-    % Get expansion
-    E_case2(w) = vol_cap.case2.E;
-    
-    % Get pre-calculated V_A for all porosities
-    V_A_case2_all(w, :) = vol_cap.case2.V_A_array;
-end
+E_case2       = data_save.vol_cap.case2.E;
+V_A_case2_all = data_save.vol_cap.case2.V_A_array;
 
 figure('Position', [150, 150, 1400, 700]);
 set(gcf, 'Color', 'w');
@@ -311,8 +268,8 @@ title('Case-Study 2: Constant Porosity (P_A = P_{ALi})', ...
 legend('Location', 'northwest', 'FontSize', 11);
 set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
-fprintf('✓ Case Study 2 plot created\n');
-fprintf('✓ All volumetric capacity case study plots complete!\n\n');
+%fprintf('✓ Case Study 2 plot created\n');
+%fprintf('✓ All volumetric capacity case study plots complete!\n\n');
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.

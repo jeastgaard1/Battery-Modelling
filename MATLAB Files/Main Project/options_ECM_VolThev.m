@@ -79,7 +79,7 @@ options.ini.SoC=0.95;% [-] 0-1
 options.env.T_amb = 297; % Ambient Temperature
 
 % Bools ###################################################################
-options.bool.ini=0; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
+options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
 options.bool.Aging=0;
 options.bool.Thermal=0;
 options.bool.cruise=0;

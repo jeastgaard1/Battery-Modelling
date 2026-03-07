@@ -51,22 +51,38 @@ end
 
 %% Initialize Current Distribution Arrays (PRAVEEN)
 % Dimensions: (time_steps, Si_wt%, C_rates)
-data_save.current_dist.I_Si = [];
-data_save.current_dist.I_G = [];
-data_save.current_dist.j_Si = [];
-data_save.current_dist.j_G = [];
-data_save.current_dist.eta = [];
-data_save.current_dist.SOC = [];
-data_save.current_dist.frac_Si = [];
-data_save.current_dist.frac_G = [];
 
-%ECM
-% for trans=1:length(options.Save.ECM(:,1))
-%     data_save.ECM.(options.Save.ECM{trans,:})(1,:)=zeros(1,1);
-% end
-% %Particle
-% for trans=1:length(options.Save.Particle(:,1))
-%     data_save.Particle.(options.Save.Particle{trans,:})=zeros(1,options.seg_particle);
-% end
+n_wtSi  = length(options.wtSi);
+n_cRate = length(options.cRates);
+
+data_save.current_dist.I_Si    = zeros(n_wtSi, n_cRate);
+data_save.current_dist.I_G     = zeros(n_wtSi, n_cRate);
+data_save.current_dist.j_Si    = zeros(n_wtSi, n_cRate);
+data_save.current_dist.j_G     = zeros(n_wtSi, n_cRate);
+data_save.current_dist.frac_Si = zeros(n_wtSi, n_cRate);
+data_save.current_dist.frac_G  = zeros(n_wtSi, n_cRate);
+
+%% ── Volumetric Capacity────────────────────────────────────────
+% Dimensions: (n_wtSi x 1) — computed once per wt%, C-rate independent
+data_save.vol_cap.wtSi = zeros(n_wtSi, 1);
+data_save.vol_cap.G_A  = zeros(n_wtSi, 1);
+data_save.vol_cap.P_A  = zeros(n_wtSi, 1);
+
+% Case 1: Zero expansion
+data_save.vol_cap.case1.V_A          = zeros(n_wtSi, 1);
+data_save.vol_cap.case1.P_A_required = zeros(n_wtSi, 1);
+data_save.vol_cap.case1.P_ALi        = zeros(n_wtSi, 1);
+data_save.vol_cap.case1.E            = zeros(n_wtSi, 1);
+
+% Case 2: Constant porosity — V_A_array has 5 porosity levels
+data_save.vol_cap.case2.V_A          = zeros(n_wtSi, 1);
+data_save.vol_cap.case2.V_A_array    = zeros(n_wtSi, 5);
+data_save.vol_cap.case2.P_ALi        = zeros(n_wtSi, 1);
+data_save.vol_cap.case2.E            = zeros(n_wtSi, 1);
+
+% Case 3: Variable porosity
+data_save.vol_cap.case3.V_A          = zeros(n_wtSi, 1);
+data_save.vol_cap.case3.P_ALi        = zeros(n_wtSi, 1);
+data_save.vol_cap.case3.E            = zeros(n_wtSi, 1);
 end
 
