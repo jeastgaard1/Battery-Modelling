@@ -69,12 +69,13 @@ for cr = 1:length(options.cRates)
             V_sim(k) = ECM_term_volt(t_sim(k), u_sim(k,:).', param);
             % This Battery_Model is where all models will be called each loop.
             [battery_res,options] = Battery_Model_ECM_VolThev(battery_res,param,options,k); %Cell ECM Model
-            [battery_res] = Current_Distribution_Model(battery_res, param, options, k);
+            
             % Set vol_cap into battery_res at k==1, cr==1 only
             if cr == 1 && k == 1
                 battery_res.vol_cap = Volumetric_Capacity_Model(param, options);
                 fprintf('  vol_cap set for w=%d, V_A_case1=%.2f mAh/cm3\n', w, battery_res.vol_cap.case1.V_A);
             end
+            
             % After every model generation, data will need to be saved so
             % that it can be plotted later.
             [data_save] = SaveData(battery_res, data_save, options, k, w, cr); %Save Data
