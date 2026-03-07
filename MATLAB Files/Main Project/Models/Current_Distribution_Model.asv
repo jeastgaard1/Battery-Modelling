@@ -14,19 +14,14 @@ end
 s_Si = options.materials.s_Si;
 s_G = options.materials.s_G;
 
-%% ── Weight fractions ────────────────────────────────────────────────────
-
-frac_Si = param.anode.wtSi                % back to fraction (e.g. 0.15)
-frac_G  = 1-frac_Si;                % back to fraction (e.g. 0.80)
-
 %% ── Physical constants ──────────────────────────────────────────────────
 F     = options.constants.F;         % Faraday constant [C/mol]
 R_gas = options.constants.R_gas;     % Gas constant [J/(mol·K)]
 T     = options.ini.T;               % Temperature [K]
 
 %% ── Densities (g/cm³ → g/m³) ───────────────────────────────────────────
-rho_Si_m3 = options.materials.rho_Si * 1e6;            % [g/m³]
-rho_G_m3  = options.materials.rho_G  * 1e6;            % [g/m³]
+rho_Si_m3 = rho_Si * 1e6;            % [g/m³]
+rho_G_m3  = rho_G  * 1e6;            % [g/m³]
 
 %% ── Kinetic parameters ──────────────────────────────────────────────────
 i0_Si = options.kinetics.i0_Si;      % Si exchange current density [A/m²]
@@ -42,11 +37,11 @@ epsilon = options.electrode.epsilon; % [-]
 
 %% ── Mass & volume from fixed total capacity ─────────────────────────────
 Q_total_fixed = options.anode.Qa;                          % [Ah]
-Q_composite   = frac_Si * s_Si + frac_G * s_G;            % [mAh/g]
+Q_composite   = s_Si * s_Si + s_G * s_G;            % [mAh/g]
 m_total       = Q_total_fixed * 1000 / Q_composite;        % [g]
 
-V_Si    = frac_Si * m_total / rho_Si_m3;                   % [m³]
-V_G     = frac_G  * m_total / rho_G_m3;                    % [m³]
+V_Si    = s_Si * m_total / rho_Si_m3;                   % [m³]
+V_G     = s_G  * m_total / rho_G_m3;                    % [m³]
 V_total = V_Si + V_G;                                      % [m³]
 
 %% ── Active surface areas ────────────────────────────────────────────────
@@ -92,9 +87,9 @@ battery_res.current_dist.I_Si    = I_Si;     % [A]
 battery_res.current_dist.I_G     = I_G;      % [A]
 battery_res.current_dist.j_Si    = j_Si;     % [A/m²]
 battery_res.current_dist.j_G     = j_G;      % [A/m²]
-battery_res.current_dist.frac_Si = f_Si;     % [-]
-battery_res.current_dist.frac_G  = f_G;      % [-]
-battery_res.current_dist.wtSi    = frac_Si;  % [-]
+battery_res.current_dist.s_Si = f_Si;     % [-]
+battery_res.current_dist.s_G  = f_G;      % [-]
+battery_res.current_dist.wtSi    = s_Si;  % [-]
 battery_res.current_dist.I_total = I_total;  % [A]
 
 end

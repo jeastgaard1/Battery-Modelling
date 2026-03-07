@@ -32,6 +32,7 @@ options.time_span = 1:1:options.data.steps;
 
 %% Initial values
 param.anode.wtSi = wtSi;
+param.cRate = cRate;
 param.time_mid = find(param.GrSi_SoC == 0, 1);
 % Defined start volume based on the mass and density. Different based
 % on the different wtSi.
