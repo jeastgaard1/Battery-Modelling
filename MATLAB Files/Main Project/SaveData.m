@@ -15,5 +15,7 @@ end
 data_save.T.(options.Save.T{cr,:})(run_variable,siW) ...
     =battery_res.T.(options.Save.T{cr,:})(1,:);
 
+data_save.TVE.(options.Save.TVE{cr,:})(run_variable,siW) ...
+    =battery_res.TVE.(options.Save.TVE{cr,:})(1,:);
 end
 

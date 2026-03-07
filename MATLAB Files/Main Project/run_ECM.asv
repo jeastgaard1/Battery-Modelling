@@ -321,7 +321,7 @@ end
 for cr = 1:length(options.cRates)
 
     figure; hold on; grid on;
-    tiledlayout(2,2);
+
     % Time vector for discharge/charge for plotting
     t_sim_DCH = data_save.time(1:param.time_mid - 1,1);
     t_sim_CH = data_save.time(param.time_mid : options.data.steps,1);
@@ -334,11 +334,10 @@ for cr = 1:length(options.cRates)
         0.47 0.67 0.19;   % olive green
         0.64 0.08 0.18    % dark red
     ];
-    nexttile;
-    hold on;
+
     % Temperature axis (left)
     yyaxis left;
-    
+    subplot(1,2,1);
     hold on;
 
     for w = 1:length(options.wtSi)
@@ -363,11 +362,9 @@ for cr = 1:length(options.cRates)
     title(sprintf('Thermal & SoC Evolution at %.1fC Discharge', options.cRates(cr)));
     legend('Location','best');
 
-    nexttile;
-    hold on;
     % Temperature axis (left)
     yyaxis left;
-    
+    subplot(1,2,2);
     hold on;
     for w = 1:length(options.wtSi)
         plot(t_sim_CH, ...
@@ -397,7 +394,7 @@ for cr = 1:length(options.cRates)
     
     for w = 1:length(options.wtSi)
         plot(t_sim_DCH, ...
-            data_save.TVE.(options.Save.TVE{cr})(1:param.time_mid - 1,w), ...
+            data_save.T.(options.Save.TVE{cr})(param.time_mid : options.data.steps,w), ...
              'Color', cmap(w,:), ...
              'LineWidth', 1.5, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
@@ -413,8 +410,7 @@ for cr = 1:length(options.cRates)
     hold on;
     
     for w = 1:length(options.wtSi)
-        plot(t_sim_CH, ...
-           data_save.TVE.(options.Save.TVE{cr})(param.time_mid : options.data.steps,w), ...
+        plot(t_sim_CH, Vexp_CH(:,w), ...
              'Color', cmap(w,:), ...
              'LineWidth', 1.5, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
