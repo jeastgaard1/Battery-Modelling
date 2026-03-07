@@ -24,8 +24,11 @@ if options.bool.EIS==0 %Parametrization based on Pulse Data ###############
 
 
         %R0 #######################################################################
-        battery_res.ECM.R(tempValue,1)=param.fit.DCH.R0(battery_res.SoC(tempValue,1),battery_res.T(tempValue,1)) ...
-            *battery_res.Aging.SoH_R(1,1)*options.Electrical.R_fac;
+        %battery_res.ECM.R(tempValue,1)=param.fit.DCH.R0(battery_res.SoC(tempValue,1),battery_res.T(tempValue,1)) ...
+            %*battery_res.Aging.SoH_R(1,1)*options.Electrical.R_fac;
+        soc_idx = max(1, round(battery_res.SoC(tempValue,1)));
+        T_idx   = max(1, round(battery_res.T(tempValue,1)));
+        battery_res.ECM.R(tempValue,1) = param.fit.DCH.R0(soc_idx, T_idx);    
         if battery_res.ECM.R(tempValue,1)<0 ...
                 || battery_res.ECM.R(tempValue,1)==0 ...
                 || isnan(battery_res.ECM.R(tempValue,1))>0

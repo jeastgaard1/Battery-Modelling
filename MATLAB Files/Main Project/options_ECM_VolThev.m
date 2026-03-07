@@ -10,7 +10,7 @@ options.time_span = 1:1:options.data.steps;
 options.data.dt = 3600/(options.data.steps/2); % time change per step.
 
 %% Save Structure
-options.Save.Cell={'U';'SoC';'OCV'};
+options.Save.Cell={'U';'SoC';'OCV';'j_Si';'j_Gr';'I_Si';'I_Gr';'I_tot'};
 options.Save.T = {'T_lowC';'T_midC';'T_highC'};
 
 %% Model options
@@ -37,6 +37,42 @@ options.anode.Qa = 5.5; % Ah Nominal Q
 options.anode.na = 1.0; % Dimensionless Coulumb efficiency
 options.anode.hA = 0.3; % Heat transfer Coefficient * Surface Area (smaller hA = cell retains heat)
 options.anode.m = 0.3;  % cell mass [kg]
+
+%% Material Properties for Electrode Design Analysis
+% Densities [g/cm³]
+options.materials.rho_Si = 2.3;      % Silicon density
+options.materials.rho_G = 2.24;      % Graphite density
+options.materials.rho_IM = 1.1;      % Inactive materials density
+
+% Specific Capacities [mAh/g]
+options.materials.s_Si = 3600;       % Silicon specific capacity
+options.materials.s_G = 330;         % Graphite specific capacity
+options.materials.s_IM = 0;          % Inactive materials (no capacity)
+
+% Expansion Factors [vol-%]
+options.materials.e_Si = 280;        % Silicon expansion
+options.materials.e_G = 10;          % Graphite expansion (assumed negligible)
+options.materials.e_IM = 0;          % Inactive materials expansion
+
+% Weight Fractions [wt-%]
+options.materials.w_IM = 0.05;          % Inactive materials weight fraction
+
+% Particle sizes [m]
+options.particles.r_Si = 100e-9;      % Silicon particle radius (100 nm)
+options.particles.r_G = 10e-6;        % Graphite particle radius (10 m)
+
+% Electrode properties
+options.electrode.epsilon = 0.35;     % Porosity
+
+% Kinetic parameters
+options.kinetics.i0_Si = 0.5;         % Silicon exchange current density [A/m²]
+options.kinetics.i0_G = 35;           % Graphite exchange current density [A/m²]
+options.kinetics.alpha = 0.5;         % Charge transfer coefficient
+
+% Physical constants
+options.constants.F = 96485;          % Faraday constant [C/mol]
+options.constants.R_gas = 8.314;      % Gas constant [J/(mol·K)]
+
 % Initial / Enviroment Values ###########################################################
 options.ini.T=297; % [°K]
 options.ini.SoC=0.95;% [-] 0-1
