@@ -1,6 +1,6 @@
-function [battery_res] = ThermalVSSi_Model(battery_res,param,options,timeStep,SiW,cRate)
+function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
 
-switch cRate
+switch param.cRate
     case 1
         T_rate = 'T_lowC';
     case 2
@@ -8,6 +8,8 @@ switch cRate
     otherwise
         T_rate = 'T_highC';
 end
+
+timeStep = battery_res.time(1,1);
 
 % Initialize temperature at start and when discharge changes to charge.
 if ~isfield(battery_res.T, T_rate) || isempty(battery_res.T.(T_rate)) ...
@@ -22,11 +24,11 @@ T = battery_res.T.(T_rate)(1,1);
 SoC = max(0,min(1,param.za(timeStep)));
 battery_res.SoC(1,1) = SoC;
 
-w = options.wtSi(SiW);
+wtSi = param.anode.wtSi
 
 % === OCV and entropic coefficient ===
-Uocv = param.OCV_tot(SoC, w);
-dUdT = param.dUdt(SoC, w);
+Uocv = param.OCV_tot(SoC, wtSi);
+dUdT = param.dUdt(SoC, wtSi);
 
 % === Current calculated in ECM ===
 I = param.I(timeStep);
@@ -35,7 +37,7 @@ I = param.I(timeStep);
 hA = options.anode.hA * (1 + 0.02*(T - options.env.T_amb));
 
 % === Thermal mass ===
-Cth = param.thermal.mcp(w);
+Cth = param.thermal.mcp(wtSi);
 
 % === Irreversible heat ===
 Qirr = I^2 * param.Rtot(timeStep);

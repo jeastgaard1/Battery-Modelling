@@ -55,7 +55,6 @@ for cr = 1:length(options.cRates)
         % Creating new parameters every time with different cell (wt%) and
         % C-Rates for simulation. Redundant/expensive but simple solution.        
         [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w),options.cRates(cr));
-        fprintf("Running with Si wt%% = %.2f'\n", param.anode.wtSi);
         
         % Set up ODE equation
         x0 = [0; 0];
@@ -69,8 +68,7 @@ for cr = 1:length(options.cRates)
         for k = 1:numel(t_sim)
             V_sim(k) = ECM_term_volt(t_sim(k), u_sim(k,:).', param);
             % This Battery_Model is where all models will be called each loop.
-            %[battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param,msg,options,const); %Cell ECM Model
-            [battery_res] = ThermalVSSi_Model(battery_res,param,options,k,w,cr);
+            [battery_res,options] = Battery_Model_ECM_VolThev(battery_res,param,options,k); %Cell ECM Model
             [battery_res] = Current_Distribution_Model(battery_res, param, options, k);
             % Set vol_cap into battery_res at k==1, cr==1 only
             if cr == 1 && k == 1

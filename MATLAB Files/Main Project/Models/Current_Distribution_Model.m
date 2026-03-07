@@ -11,11 +11,8 @@ if timeStep ~= 1
 end
 
 %% Extract material properties from options structure
-rho_Si = options.materials.rho_Si;
-rho_G = options.materials.rho_G;
 s_Si = options.materials.s_Si;
 s_G = options.materials.s_G;
-w_IM = options.materials.w_IM;
 
 %% ── Weight fractions ────────────────────────────────────────────────────
 % param.anode.wtSi is a fraction (e.g. 0.15), w_IM is in percent (e.g. 5)
