@@ -37,22 +37,13 @@ G_A = (wtSi * s_Si + wtG * s_G) / 100;
 %% Initial electrode porosity
 P_A = options.electrode.epsilon;  % Initial porosity (before lithiation)
 
-% fprintf('\n═══════════════════════════════════════════════════════════════\n');
-% fprintf('  VOLUMETRIC CAPACITY ANALYSIS: Si %.0f wt%%\n', wtSi);
-% fprintf('═══════════════════════════════════════════════════════════════\n');
-% fprintf('  Gravimetric capacity: %.2f mAh/g\n', G_A);
-% fprintf('  Initial porosity (P_A): %.2f\n', P_A);
-% fprintf('───────────────────────────────────────────────────────────────\n\n');
-
 %% ═══════════════════════════════════════════════════════════════════════
 %% CASE 1: ZERO EXPANSION (Theoretical Baseline)
 %% ═══════════════════════════════════════════════════════════════════════
 % Assumes no volume change upon lithiation (E = 0)
 % This gives the theoretical maximum volumetric energy density
-
-% fprintf('CASE 1: Zero Expansion (E=0)\n');
-
 % No expansion
+
 E_case1 = 0;
 P_ALi_case1 = 0;  % Porosity after lithiation set to zero for max capacity
 
@@ -74,20 +65,12 @@ P_A_required_case1 = numerator / denominator;
 % Volumetric capacity - Equation (5)
 V_A_case1 = G_A * 100 / denominator;
 
-% fprintf('  Expansion (E): %.2f%%\n', E_case1);
-% fprintf('  Required initial porosity (P_A): %.2f\n', P_A_required_case1);
-% fprintf('  Porosity after Li (P_ALi): %.2f\n', P_ALi_case1);
-% fprintf('  Volumetric capacity: %.2f mAh/cm³\n', V_A_case1);
-% fprintf('\n');
-
 %% ═══════════════════════════════════════════════════════════════════════
 %% CASE 2: CONSTANT POROSITY (Practical Design)
 %% ═══════════════════════════════════════════════════════════════════════
 % Assumes porosity remains constant (P_A = P_ALi)
 % Porosity remains constant, electrode expands freely
 % This represents a design that maintains structural integrity
-
-% fprintf('CASE 2: Constant Porosity (P_A = P_ALi)\n');
 
 % Define porosity levels to calculate
 porosity_levels = [0, 10, 20, 30, 40];  % vol-%
@@ -141,11 +124,6 @@ end
 % Volumetric capacity - Equation (5)
 %V_A_case2 = G_A * rho_ALi_case2;
 
-% fprintf('  Expansion (E): %.2f%%\n', E_case2);
-% fprintf('  Initial porosity (P_A): %.2f\n', P_A);
-% fprintf('  Porosity after Li (P_ALi): %.2f\n', P_ALi_case2);
-% fprintf('  Volumetric capacity (at P_A=%.2f): %.2f mAh/cm³\n', P_A, V_A_case2);
-% fprintf('\n');
 
 %% ═══════════════════════════════════════════════════════════════════════
 %% CASE 3: VARIABLE POROSITY (Optimized Design)
@@ -153,8 +131,6 @@ end
 % Calculates actual porosity after lithiation
 % P_ALi = P_A - E (porosity decreases due to expansion)
 % Porosity changes due to expansion - Equation (7)
-
-%fprintf('CASE 3: Variable Porosity (P_ALi calculated)\n');
 
 % Same expansion as Case 2
 E_case3 = E_case2;
@@ -171,8 +147,7 @@ w_IM_frac = w_IM / 100;
 % First calculate initial density - Equation (1)
 %rho_A = (100 - P_A) / (w_Si/rho_Si + w_G/rho_G + w_IM_frac/rho_IM);
 rho_A = (100 - P_A) / (w_Si_frac/rho_Si + w_G_frac/rho_G + w_IM_frac/rho_IM);
-%v_Si = (rho_A / rho_Si) * w_Si;
-%v_G = (rho_A / rho_G) * w_G;
+
 v_Si = (rho_A / rho_Si) * w_Si_frac;
 v_G = (rho_A / rho_G) * w_G_frac;
 %v_IM = (rho_A / rho_IM) * w_IM_frac;
