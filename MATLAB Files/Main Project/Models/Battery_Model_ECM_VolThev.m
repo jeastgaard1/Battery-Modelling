@@ -4,7 +4,7 @@ if options.bool.ini==1 %function called first time -> Cell states will be initia
     %Time #################################################################
     battery_res.time(1,1)=0; %set time to 0
     
-    % options.bool.ini=0; %Initilization done
+    options.bool.ini=0; %Initilization done
 else %calculation base on last value
     %time #####################################################
     battery_res.time(1,1)= step;                    %Time Variable
