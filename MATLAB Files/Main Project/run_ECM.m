@@ -53,7 +53,8 @@ for cr = 1:length(options.cRates)
     figure; hold on;
     for w = 1:length(options.wtSi) % Loop through different Si%
         % Creating new parameters every time with different cell (wt%) and
-        % C-Rates for simulation. Redundant/expensive but simple solution.        
+        % C-Rates for simulation. Redundant/expensive but simple solution.  
+        %options.bool.ini = 1; 
         [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w),options.cRates(cr));
         
         % Set up ODE equation
@@ -105,8 +106,10 @@ for cr = 1:length(options.cRates)
 
     % data_save.current_dist.I_Si is (n_time x n_wtSi x n_cRates)
     % All time rows are identical (time-invariant), so take row 1
-    I_Si_snapshot = squeeze(data_save.current_dist.I_Si(1, :, cr)) * 1000;  % [mA]
-    I_G_snapshot  = squeeze(data_save.current_dist.I_G(1, :, cr))  * 1000;  % [mA]
+    n_rows        = size(data_save.current_dist.I_Si, 1);
+    snap_row      = max(2, round(n_rows / 2));
+    I_Si_snapshot = squeeze(data_save.current_dist.I_Si(snap_row, :, cr)) * 1000;  % [mA]
+    I_G_snapshot  = squeeze(data_save.current_dist.I_G(snap_row, :, cr))  * 1000;  % [mA]
 
     b = bar([I_G_snapshot; I_Si_snapshot]', 'grouped');
     b(1).FaceColor = [0.47 0.67 0.19];  % Graphite
