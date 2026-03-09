@@ -10,7 +10,7 @@ options.time_span = 1:1:options.data.steps;
 options.data.dt = 3600/(options.data.steps/2); % time change per step.
 
 %% Save Structure
-options.Save.Cell={'U';'SoC';'OCV'};
+options.Save.Cell={'U';'SoC';'OCV';'j_Si';'j_Gr';'I_Si';'I_Gr';'I_tot'};
 options.Save.T = {'T_lowC';'T_midC';'T_highC'};
 
 %% Model options
@@ -55,7 +55,7 @@ options.materials.e_G = 10;          % Graphite expansion (assumed negligible)
 options.materials.e_IM = 0;          % Inactive materials expansion
 
 % Weight Fractions [wt-%]
-options.materials.w_IM = 5;          % Inactive materials weight fraction
+options.materials.w_IM = 0.05;          % Inactive materials weight fraction
 
 % Particle sizes [m]
 options.particles.r_Si = 100e-9;      % Silicon particle radius (100 nm)
