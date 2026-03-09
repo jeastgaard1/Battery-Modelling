@@ -8,10 +8,21 @@ if options.bool.ini==1 %function called first time -> Cell states will be initia
 else %calculation base on last value
     %time #####################################################
     battery_res.time(1,1)= step;                    %Time Variable
-
+    battery_res.SoC(1,1) = max(0,min(1,param.za(step)));
+    
+    [battery_res] = Volume_Expansion(battery_res, param, options );
+    
     [battery_res] = ThermalVSSi_Model(battery_res,param,options);
     
     [battery_res] = Current_Distribution_Model(battery_res, param, options, step);
+
+    
+    
+    % Set the RC R's
+    battery_res.ECM.R = param.R0(step);
+    battery_res.ECM.R_RC1 = param.R1(step);
+    battery_res.ECM.R_RC2 = param.R2(step);
+
 end
 
 

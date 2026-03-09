@@ -17,12 +17,10 @@ if ~isfield(battery_res.T, T_rate) || isempty(battery_res.T.(T_rate)) ...
     battery_res.T.(T_rate)(1,1) = options.ini.T;
 end
 
-
 % === State variables ===
 T = battery_res.T.(T_rate)(1,1);
 
-SoC = battery_res.SoC(1,1);
-
+S
 wtSi = param.anode.wtSi;
 
 % === OCV and entropic coefficient ===
