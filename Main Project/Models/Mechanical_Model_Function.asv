@@ -1,0 +1,88 @@
+function [results] = Mechanical_Model_Function(options, wtSi, current_dist)
+    % Extract parameters for readability
+    m = options.mech;
+    SoC_sim = linspace(0, 1, 200)';
+    steps = length(SoC_sim);
+    
+    %% 1. Macro-Scale: Strain Calculation
+    % Synthetic strain (replace with mahenders volume expansion)
+    eps_Si = SoC_sim * 2.8; 
+    eps_Gr = SoC_sim * 0.1; 
+    eps_NMC = -SoC_sim * 0.02; 
+    
+    eps_anode = (wtSi)*eps_Si + (1-wtSi)*eps_Gr;
+    delta_L = (m.d0_anode * eps_anode) + (m.d0_cathode * eps_NMC);
+    
+    % Cell Stress
+    Compliance = (m.d0_anode/(m.E_anode*m.Area)) + (m.d0_cathode/(m.E_cathode*m.Area)) + (m.d0_sep/(m.E_sep*m.Area));
+    if strcmp(m.BoundaryCondition, 'fixed')
+        results.stack_stress = (delta_L / Compliance) / m.Area;
+    else
+        results.stack_stress = zeros(size(SoC_sim));
+    end
+    results.strain = eps_anode;
+    results.thickening = delta_L;
+
+    %% 2. Micro-Scale: Particle Stress (Implicit Solver)
+    Nr = 50; 
+    r = linspace(0, m.R_p, Nr)';
+    dr = r(2)-r(1);
+    dt = 3600 / steps; % Time for 1C / steps
+    % Silicon: ~3579 Ah/kg, Graphite: ~372 Ah/kg
+    Cap_Si = 3579 * 3600; % [As/kg]
+    Cap_Gr = 372 * 3600;  % [As/kg]
+    Cap_composite = (wtSi * Cap_Si) + ((1-wtSi) * Cap_Gr);
+
+    % Current density scaled by C-rate
+    i_n = cRate * (m.Capacity_theo * m.R_p * m.rho_avg) / (3 * 3600);
+    F = options.constants.F;
+    flux_dynamic = current_dist.j_Si / F;
+
+    % Diffusion Matrix
+    Fo = m.D_s * dt / dr^2;
+    A = zeros(Nr, Nr);
+    for i = 2:Nr-1
+        gamma = Fo * (dr / r(i));
+        A(i, i-1) = -Fo + gamma;
+        A(i, i)   = 1 + 2*Fo;
+        A(i, i+1) = -Fo - gamma;
+    end
+    A(1,1) = 1+6*Fo; A(1,2) = -6*Fo; % Center
+    A(Nr,Nr-1) = -1; A(Nr,Nr) = 1;   % Surface Flux
+    
+    c = zeros(Nr, steps);
+    % OLD: for t = 1:steps-1 ... B(Nr) = (flux * dr / m.D_s); ...
+% NEW:
+for t = 1:steps-1
+    B = c(:,t); 
+    B(Nr) = (flux_dynamic(t) * dr / m.D_s); % Updates boundary condition every step
+    c(:,t+1) = A \ B;
+end
+
+    % Stress Calculation
+    sig_r = zeros(Nr, steps); sig_t = zeros(Nr, steps);
+    % Effective Modulus of the composite (simple rule of mixtures)
+    % Si: ~12 GPa (lithiated) to 80 GPa (pure), Graphite: ~10-15 GPa
+    E_eff_anode = (wtSi * 12e9) + ((1-wtSi) * 10e9); 
+
+    % Use E_eff_anode in the stress constants instead of m.E_anode
+    const_r = (2*m.Omega * E_eff_anode) / (9 * (1 - m.nu));
+    const_t = (m.Omega * E_eff_anode) / (9 * (1 - m.nu));
+
+    for t = 1:steps
+        c_avg = (3/m.R_p^3) * trapz(r, c(:,t).*r.^2);
+        int_v = cumtrapz(r, c(:,t).*r.^2);
+        for i = 2:Nr
+            avg_loc = (3/r(i)^3) * int_v(i);
+            sig_r(i,t) = const_r * (c_avg - avg_loc);
+            sig_t(i,t) = const_t * (2*c_avg + avg_loc - 3*c(i,t));
+        end
+        sig_r(1,t) = const_r * (c_avg - c(1,t));
+        sig_t(1,t) = sig_r(1,t);
+    end
+    
+    results.r_norm = r/m.R_p;
+    results.SoC = SoC_sim;
+    results.sigma_t_surface = sig_t(Nr, :);
+    results.max_particle_stress = max(abs(sig_t(:)));
+end

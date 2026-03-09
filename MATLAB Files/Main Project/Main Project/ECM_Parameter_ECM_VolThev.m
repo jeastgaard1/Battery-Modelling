@@ -3,7 +3,6 @@
 function [param] = ECM_Parameter_ECM_VolThev(options, wtSi, cRate)
 
 % Retrieve given data in param
-
 load('Potential_Gr_Si_NMC.mat')
 
 % We now want to join the data since we have to discharge then charge up
@@ -32,7 +31,6 @@ options.time_span = 1:1:options.data.steps;
 
 %% Initial values
 param.anode.wtSi = wtSi;
-param.cRate = cRate;
 param.time_mid = find(param.GrSi_SoC == 0, 1);
 
 fprintf("Found Half time: %.0f [m]\n",param.time_mid);
