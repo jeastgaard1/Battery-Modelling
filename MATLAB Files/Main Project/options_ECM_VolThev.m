@@ -10,7 +10,7 @@ options.time_span = 1:1:options.data.steps;
 options.data.dt = 3600/(options.data.steps/2); % time change per step.
 
 %% Save Structure
-options.Save.Cell={'U';'SoC';'OCV';'j_Si';'j_Gr';'I_Si';'I_Gr';'I_tot';'VV0';'dV_Si';'dV_Gr'};
+options.Save.Cell={'U';'SoC';'OCV';'j_Si';'j_Gr';'I_Si';'I_Gr';'I_tot'};
 options.Save.T = {'T_lowC';'T_midC';'T_highC'};
 options.Save.ECM = {'R';'R_RC1';'R_RC2'};
 

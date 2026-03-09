@@ -51,6 +51,4 @@ battery_res.T.(T_rate)(1,1) = T + battery_res.dTdt * options.data.dt;
 % === SoC differential equation ===
 battery_res.dzdt = -I / (options.anode.Qa);
 
-% Suggestion from TA was to -->
-% Check lithiation stages ->phase changes for Gr batteries.
 end
