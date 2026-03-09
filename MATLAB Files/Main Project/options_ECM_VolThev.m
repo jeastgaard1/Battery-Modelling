@@ -10,8 +10,9 @@ options.time_span = 1:1:options.data.steps;
 options.data.dt = 3600/(options.data.steps/2); % time change per step.
 
 %% Save Structure
-options.Save.Cell={'U';'SoC';'OCV'};
+options.Save.Cell={'U';'SoC';'OCV';'j_Si';'j_Gr';'I_Si';'I_Gr';'I_tot';'VV0';'dV_Si';'dV_Gr'};
 options.Save.T = {'T_lowC';'T_midC';'T_highC'};
+options.Save.ECM = {'R';'R_RC1';'R_RC2'};
 
 %% Model options
 %Cell type ################################################################
@@ -39,7 +40,7 @@ options.anode.hA = 0.3; % Heat transfer Coefficient * Surface Area (smaller hA =
 options.anode.m = 0.3;  % cell mass [kg]
 
 %% Material Properties for Electrode Design Analysis
-% Densities [g/cm³]
+% Densities [g/cmï¿½]
 options.materials.rho_Si = 2.3;      % Silicon density
 options.materials.rho_G = 2.24;      % Graphite density
 options.materials.rho_IM = 1.1;      % Inactive materials density
@@ -65,16 +66,16 @@ options.particles.r_G = 10e-6;        % Graphite particle radius (10 m)
 options.electrode.epsilon = 0.35;     % Porosity
 
 % Kinetic parameters
-options.kinetics.i0_Si = 0.5;         % Silicon exchange current density [A/m²]
-options.kinetics.i0_G = 35;           % Graphite exchange current density [A/m²]
+options.kinetics.i0_Si = 0.5;         % Silicon exchange current density [A/mï¿½]
+options.kinetics.i0_G = 35;           % Graphite exchange current density [A/mï¿½]
 options.kinetics.alpha = 0.5;         % Charge transfer coefficient
 
 % Physical constants
 options.constants.F = 96485;          % Faraday constant [C/mol]
-options.constants.R_gas = 8.314;      % Gas constant [J/(mol·K)]
+options.constants.R_gas = 8.314;      % Gas constant [J/(molï¿½K)]
 
 % Initial / Enviroment Values ###########################################################
-options.ini.T=297; % [°K]
+options.ini.T=297; % [ï¿½K]
 options.ini.SoC=0.95;% [-] 0-1
 options.env.T_amb = 297; % Ambient Temperature
 
