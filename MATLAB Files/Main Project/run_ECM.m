@@ -291,7 +291,7 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 for cr = 1:length(options.cRates)
 
     figure; hold on; grid on;
-    tiledlayout(2,2);
+
     % Time vector for discharge/charge for plotting
     t_sim_DCH = data_save.time(1:param.time_mid - 1,1);
     t_sim_CH = data_save.time(param.time_mid : options.data.steps,1);
@@ -304,13 +304,12 @@ for cr = 1:length(options.cRates)
         0.47 0.67 0.19;   % olive green
         0.64 0.08 0.18    % dark red
     ];
-    nexttile;
-    hold on;
+
     % Temperature axis (left)
     yyaxis left;
-    
+    subplot(1,2,1);
     hold on;
-
+    ylabel('Temperature [K]');
     for w = 1:length(options.wtSi)
         plot(t_sim_DCH, ...
              data_save.T.(options.Save.T{cr})(1:param.time_mid - 1,w), ...
@@ -328,16 +327,13 @@ for cr = 1:length(options.cRates)
          'DisplayName', 'SoC');
     xlim([min(t_sim_DCH) max(t_sim_DCH)])
     ylabel('State of Charge [-]');
-    ylabel('Temperature [K]');
     xlabel('Time [min]');
     title(sprintf('Thermal & SoC Evolution at %.1fC Discharge', options.cRates(cr)));
     legend('Location','best');
 
-    nexttile;
-    hold on;
     % Temperature axis (left)
     yyaxis left;
-    
+    subplot(1,2,2);
     hold on;
     for w = 1:length(options.wtSi)
         plot(t_sim_CH, ...
@@ -371,3 +367,13 @@ xlabel('SOC [-]');
 ylabel('V/V_0 [-]');
 title('Anode V/V_0 vs SOC — effect of Si content (math model)');
 legend(compose('wt_{Si} = %.0f%%', options.wtSi*100), 'Location', 'NorthWest');
+
+%% ----- Thermal Strain ---- %%
+figure;
+plot(data_save.T.T_highC, data_save.TVE.TVE_highC, 'LineWidth', 2);
+grid on;
+xlabel('SOC [-]');
+ylabel('V/V_0 [-]');
+title('Thermal Strain VS SoC');
+legend(compose('wt_{Si} = %.0f%%', options.wtSi*100), 'Location', 'NorthWest');
+
