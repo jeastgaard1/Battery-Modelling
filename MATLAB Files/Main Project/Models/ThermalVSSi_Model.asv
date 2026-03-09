@@ -1,9 +1,9 @@
 function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
 
 switch param.cRate
-    case 0.1
-        T_rate = 'T_lowC';
     case 1
+        T_rate = 'T_lowC';
+    case 2
         T_rate = 'T_midC';
     otherwise
         T_rate = 'T_highC';
@@ -17,12 +17,10 @@ if ~isfield(battery_res.T, T_rate) || isempty(battery_res.T.(T_rate)) ...
     battery_res.T.(T_rate)(1,1) = options.ini.T;
 end
 
-
 % === State variables ===
 T = battery_res.T.(T_rate)(1,1);
 
-SoC = battery_res.SoC(1,1);
-
+S
 wtSi = param.anode.wtSi;
 
 % === OCV and entropic coefficient ===
@@ -53,4 +51,6 @@ battery_res.T.(T_rate)(1,1) = T + battery_res.dTdt * options.data.dt;
 % === SoC differential equation ===
 battery_res.dzdt = -I / (options.anode.Qa);
 
+% Suggestion from TA was to -->
+% Check lithiation stages ->phase changes for Gr batteries.
 end

@@ -1,6 +1,6 @@
 % This ECM currently assumes instantantanious volume expansion so we do not
 % include the calculations with a time constant.
-function [param] = ECM_Parameter_ECM_VolThev(options, wtSi, cRate)
+function [param] = ECM_Parameter_ECM_VolThev(data_save, options, wtSi, cRate)
 
 % Retrieve given data in param
 load('Potential_Gr_Si_NMC.mat')
@@ -30,7 +30,7 @@ options.data.steps = length(param.NMC_OCV(:,1));
 options.time_span = 1:1:options.data.steps;
 
 %% Initial values
-param.anode.wtSi = wtSi;
+param.anode.wtSi = options.wtSi(wtSi);
 param.cRate = cRate;
 param.time_mid = find(param.GrSi_SoC == 0, 1);
 
@@ -88,7 +88,12 @@ param.OCV_cathode = @(t) interp1( ...
 param.anode.aSi = 3 * param.anode.wtSi; % Dimensionless Max volumetric strain
 
 % Volume strain / expantion
-param.Volexp = @(t) param.anode.aSi * param.za(t); 
+% param.expan = @(t) Volume_Expansion(battery_res, param, options, t);
+% param.Volexp = @(t) data_save.VV0(t,wtSi); 
+
+param.Volexp = @(t) interp1(options.time_span,...
+                    data_save.VV0(:,wtSi) ,...
+                    t, 'linear', 'extrap');
 
 % Volume-dependent resistance and RC
 param.R0 = @(t) options.ECM.R0 * (1 + options.ECM.kR0 * param.Volexp(t) );
