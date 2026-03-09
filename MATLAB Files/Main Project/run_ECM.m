@@ -53,9 +53,10 @@ battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 
 %% Solve for Volume expansion vs SoC
 for w = 1:length(options.wtSi)
-    [param]=ECM_Parameter_ECM_VolThev(data_save, options,w,options.cRates(1));
+    [param]=ECM_Parameter_ECM_VolThev(data_save, options, w,options.cRates(2));
     for step = 1:length(param.NMC_OCV(:,1))
         [data_save] = Volume_Expansion(data_save, param, options, step, w );
+        
     end
 end
 
@@ -361,7 +362,7 @@ for cr = 1:length(options.cRates)
 end
 %% ----- Volume expansion Plot ------%%
 figure;
-plot(data_save.SoC(1 : options.data.steps, 1), data_save.VV0, 'LineWidth', 2);
+plot(data_save.SoC(1 : length(param.NMC_OCV(:,1)), 1), data_save.VV0, 'LineWidth', 2);
 grid on;
 xlabel('SOC [-]');
 ylabel('V/V_0 [-]');
