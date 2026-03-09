@@ -61,11 +61,7 @@ battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 =======
 %% Solve for Volume expansion vs SoC
 for w = 1:length(options.wtSi)
-    [param]=ECM_Parameter_ECM_VolThev(data_save, options, w,options.cRates(2));
-    for step = 1:length(param.NMC_OCV(:,1))
-        [data_save] = Volume_Expansion(data_save, param, options, step, w );
-        
-    end
+    
 end
 
 >>>>>>> main
@@ -81,14 +77,8 @@ for cr = 1:length(options.cRates)
 =======
         % C-Rates for simulation. Redundant/expensive but simple solution.  
         %options.bool.ini = 1; 
-<<<<<<< Updated upstream
         [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w),options.cRates(cr));
 >>>>>>> main
-=======
-        [param]=ECM_Parameter_ECM_VolThev(data_save,options, w, options.cRates(cr));
-        fprintf("Running Loop: Si wt%% = %.2f, C-Rate = %.1f\n", param.anode.wtSi, options.cRates(cr));
-
->>>>>>> Stashed changes
         
         % Set up ODE equation
         x0 = [0; 0];
@@ -149,20 +139,7 @@ for cr = 1:length(options.cRates)
             battery_res.time(1,1) = k;
         end
         
-<<<<<<< Updated upstream
 >>>>>>> main
-=======
-        %Stuff for mechanical model
-         current_dist_time = Current_Distribution_Model(param, options, t_sim);
-        data_save.mech{cr, w} = Mechanical_Model_Function(options, options.wtSi(w), current_dist_time);
-        data_save.current_dist.I_Si(:, w, cr) = current_dist_time.I_Si;
-        data_save.current_dist.I_G(:, w, cr) = current_dist_time.I_G;
-        data_save.current_dist.j_Si(:, w, cr) = current_dist_time.j_Si;
-        data_save.current_dist.j_G(:, w, cr) = current_dist_time.j_G;
-        data_save.current_dist.SOC(:, w, cr) = current_dist_time.SOC;
-
-
->>>>>>> Stashed changes
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
@@ -558,92 +535,6 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 %fprintf('✓ All volumetric capacity case study plots complete!\n\n');
 >>>>>>> main
 
-%% ═══════════════════════════════════════════════════════════════════════
-%% OVERALL PACK MECHANICAL COMPARISON: Silicon Content Effects -David
-%% ═══════════════════════════════════════════════════════════════════════
-%% ═══════════════════════════════════════════════════════════════════════
-%% PLOT PARTICLE-LEVEL STRESS COMPARISON (Radial vs Tangential)
-%% ═══════════════════════════════════════════════════════════════════════
-cmap_mech = jet(length(options.wtSi));
-
-for cr = 1:length(options.cRates)
-    fig = figure('Name', sprintf('Particle Stress Analysis @ %.1fC', options.cRates(cr)), ...
-                 'Units', 'normalized', 'Position', [0.1, 0.1, 0.8, 0.7], 'Color', 'w');
-    
-    phases = {'Si', 'Gr'};
-    titles = {'Silicon Particle Stresses', 'Graphite Particle Stresses'};
-    
-    for p = 1:2
-        subplot(1, 2, p); hold on; grid on;
-        for w = 1:length(options.wtSi)
-            res = data_save.mech{cr, w};
-            
-            % Plot Tangential Surface Stress (Solid line)
-            plot(res.SoC*100, real(res.(phases{p}).sigma_t_surface) / 1e6, ...
-            'Color', cmap_mech(w,:), 'LineWidth', 2, ...
-             'DisplayName', sprintf('%.0f%% Si: \\sigma_t', options.wtSi(w)*100));
-
-            % Plot Radial Center Stress
-            plot(res.SoC*100, real(res.(phases{p}).sigma_r_center) / 1e6, ...
-            'Color', cmap_mech(w,:), 'LineWidth', 1.5, 'LineStyle', '--', ...
-            'HandleVisibility', 'off');
-        end
-        
-        title(titles{p}, 'FontSize', 12);
-        xlabel('State of Charge (SOC) [%]');
-        ylabel('Stress [MPa]');
-        xlim([0 100]);
-        
-        if p == 1
-            legend('Location', 'southwest', 'NumColumns', 1);
-            text(5, -1200, 'Solid: Tangential (Surface)', 'FontSize', 9, 'FontAngle', 'italic');
-            text(5, -1400, 'Dash: Radial (Center)', 'FontSize', 9, 'FontAngle', 'italic');
-        end
-    end
-    sgtitle(sprintf('Intra-Particle Stress Comparison: %.1fC Discharge', options.cRates(cr)), ...
-            'FontSize', 14, 'FontWeight', 'bold');
-end
-
-%% ═══════════════════════════════════════════════════════════════════════
-%% PLOT TOTAL PACK (STACK) STRESS
-%% ═══════════════════════════════════════════════════════════════════════
-figure('Name', 'Total Pack Stack Stress', 'Color', 'w', 'Position', [200, 200, 800, 500]);
-hold on; grid on; box on;
-
-% Using a different line style for each C-Rate to differentiate
-line_styles = {'-', '--', ':'};
-
-for cr = 1:length(options.cRates)
-    for w = 1:length(options.wtSi)
-        res = data_save.mech{cr, w};
-        
-        % Plot the macro-scale stack stress
-        % Dividing by 1e6 to convert Pascals to MPa
-        plot(res.SoC*100, res.stack_stress / 1e6, ...
-             'Color', cmap_mech(w,:), ...
-             'LineStyle', line_styles{mod(cr-1,3)+1}, ...
-             'LineWidth', 2);
-    end
-end
-
-% Create custom legend for clarity
-xlabel('State of Charge (SOC) [%]', 'FontWeight', 'bold');
-ylabel('Total Stack Stress [MPa]', 'FontWeight', 'bold');
-title('Macro-Scale Pack Stress vs. Silicon Content', 'FontSize', 14);
-
-% Helper text to explain the C-rate line styles
-text(5, max(ylim)*0.9, 'Line Styles:', 'FontWeight', 'bold');
-for cr = 1:length(options.cRates)
-    text(15, max(ylim)*(0.9 - cr*0.05), sprintf('%s  %.1f C', line_styles{cr}, options.cRates(cr)));
-end
-
-% Colorbar to represent Si content
-c = colorbar;
-colormap(jet);
-c.Label.String = 'Silicon Weight Fraction (wt-%)';
-c.Ticks = linspace(0, 1, length(options.wtSi));
-c.TickLabels = string(options.wtSi * 100);
-
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.
 for cr = 1:length(options.cRates)
@@ -757,7 +648,7 @@ end
 end
 %% ----- Volume expansion Plot ------%%
 figure;
-plot(data_save.SoC(1 : length(param.NMC_OCV(:,1)), 1), data_save.VV0, 'LineWidth', 2);
+plot(data_save.SoC(1 : options.data.steps, 1), data_save.VV0, 'LineWidth', 2);
 grid on;
 xlabel('SOC [-]');
 ylabel('V/V_0 [-]');
