@@ -40,6 +40,7 @@ addpath(genpath('Electrical'));
 % [param] = ECM_Parameter_ECM_VolThev(options, 0, 0); % Loads cell parameter with 0 % Si
 [battery_res, data_save] = structure_ECM_2RC_VolThev(options);% Loads final strucutre for results
 
+
 % Setting initial values
 if options.bool.ini == 1
     battery_res.T.T_lowC(1,1) = options.ini.T;
@@ -68,6 +69,8 @@ for cr = 1:length(options.cRates)
         % C-Rates for simulation. Redundant/expensive but simple solution.  
         %options.bool.ini = 1; 
         [param]=ECM_Parameter_ECM_VolThev(data_save,options, w, options.cRates(cr));
+        fprintf("Running Loop: Si wt%% = %.2f, C-Rate = %.1f\n", param.anode.wtSi, options.cRates(cr));
+
         
         % Set up ODE equation
         x0 = [0; 0];
@@ -95,6 +98,25 @@ for cr = 1:length(options.cRates)
             battery_res.time(1,1) = k;
         end
         
+        %Stuff for mechanical model
+        % Pre-allocate the structure for the mechanical model
+        current_dist_time.j_Si = zeros(1, length(t_sim));
+        current_dist_time.j_G  = zeros(1, length(t_sim));
+        current_dist_time.SOC  = zeros(1, length(t_sim));
+        
+        temp_res = battery_res; % Use a temporary variable for the loop
+        for t_idx = 1:length(t_sim)
+            temp_res = Current_Distribution_Model(temp_res, param, options, t_idx);
+            
+            % Extract the results for the mechanical model
+            current_dist_time.j_Si(t_idx) = temp_res.current_dist.j_Si;
+            current_dist_time.j_G(t_idx)  = temp_res.current_dist.j_G;
+            current_dist_time.SOC(t_idx)  = temp_res.current_dist.SOC; 
+        end
+                
+        SOC_ref = param.GrSi_SoC;
+        % Call the mechanical model with the collected data
+        data_save.mech{cr, w} = Mechanical_Model_Function(options, options.wtSi(w), current_dist_time, SOC_ref, data_save.VV0(:, w));
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
@@ -285,6 +307,92 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
 %fprintf('✓ Case Study 2 plot created\n');
 %fprintf('✓ All volumetric capacity case study plots complete!\n\n');
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% OVERALL PACK MECHANICAL COMPARISON: Silicon Content Effects -David
+%% ═══════════════════════════════════════════════════════════════════════
+%% ═══════════════════════════════════════════════════════════════════════
+%% PLOT PARTICLE-LEVEL STRESS COMPARISON (Radial vs Tangential)
+%% ═══════════════════════════════════════════════════════════════════════
+cmap_mech = jet(length(options.wtSi));
+
+for cr = 1:length(options.cRates)
+    fig = figure('Name', sprintf('Particle Stress Analysis @ %.1fC', options.cRates(cr)), ...
+                 'Units', 'normalized', 'Position', [0.1, 0.1, 0.8, 0.7], 'Color', 'w');
+    
+    phases = {'Si', 'Gr'};
+    titles = {'Silicon Particle Stresses', 'Graphite Particle Stresses'};
+    
+    for p = 1:2
+        subplot(1, 2, p); hold on; grid on;
+        for w = 1:length(options.wtSi)
+            res = data_save.mech{cr, w};
+            
+            % Plot Tangential Surface Stress (Solid line)
+            plot(res.SoC*100, real(res.(phases{p}).sigma_t_surface) / 1e6, ...
+            'Color', cmap_mech(w,:), 'LineWidth', 2, ...
+             'DisplayName', sprintf('%.0f%% Si: \\sigma_t', options.wtSi(w)*100));
+
+            % Plot Radial Center Stress
+            plot(res.SoC*100, real(res.(phases{p}).sigma_r_center) / 1e6, ...
+            'Color', cmap_mech(w,:), 'LineWidth', 1.5, 'LineStyle', '--', ...
+            'HandleVisibility', 'off');
+        end
+        
+        title(titles{p}, 'FontSize', 12);
+        xlabel('State of Charge (SOC) [%]');
+        ylabel('Stress [MPa]');
+        xlim([0 100]);
+        
+        if p == 1
+            legend('Location', 'southwest', 'NumColumns', 1);
+            text(5, -1200, 'Solid: Tangential (Surface)', 'FontSize', 9, 'FontAngle', 'italic');
+            text(5, -1400, 'Dash: Radial (Center)', 'FontSize', 9, 'FontAngle', 'italic');
+        end
+    end
+    sgtitle(sprintf('Intra-Particle Stress Comparison: %.1fC Discharge', options.cRates(cr)), ...
+            'FontSize', 14, 'FontWeight', 'bold');
+end
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% PLOT TOTAL PACK (STACK) STRESS
+%% ═══════════════════════════════════════════════════════════════════════
+figure('Name', 'Total Pack Stack Stress', 'Color', 'w', 'Position', [200, 200, 800, 500]);
+hold on; grid on; box on;
+
+% Using a different line style for each C-Rate to differentiate
+line_styles = {'-', '--', ':'};
+
+for cr = 1:length(options.cRates)
+    for w = 1:length(options.wtSi)
+        res = data_save.mech{cr, w};
+        
+        % Plot the macro-scale stack stress
+        % Dividing by 1e6 to convert Pascals to MPa
+        plot(res.SoC*100, res.stack_stress / 1e6, ...
+             'Color', cmap_mech(w,:), ...
+             'LineStyle', line_styles{mod(cr-1,3)+1}, ...
+             'LineWidth', 2);
+    end
+end
+
+% Create custom legend for clarity
+xlabel('State of Charge (SOC) [%]', 'FontWeight', 'bold');
+ylabel('Total Stack Stress [MPa]', 'FontWeight', 'bold');
+title('Macro-Scale Pack Stress vs. Silicon Content', 'FontSize', 14);
+
+% Helper text to explain the C-rate line styles
+text(5, max(ylim)*0.9, 'Line Styles:', 'FontWeight', 'bold');
+for cr = 1:length(options.cRates)
+    text(15, max(ylim)*(0.9 - cr*0.05), sprintf('%s  %.1f C', line_styles{cr}, options.cRates(cr)));
+end
+
+% Colorbar to represent Si content
+c = colorbar;
+colormap(jet);
+c.Label.String = 'Silicon Weight Fraction (wt-%)';
+c.Ticks = linspace(0, 1, length(options.wtSi));
+c.TickLabels = string(options.wtSi * 100);
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.

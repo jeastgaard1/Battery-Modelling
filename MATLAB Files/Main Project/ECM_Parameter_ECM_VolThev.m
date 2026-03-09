@@ -1,4 +1,4 @@
-% This ECM currently assumes instantantanious volume expansion so we do not
+%This ECM currently assumes instantantanious volume expansion so we do not
 % include the calculations with a time constant.
 function [param] = ECM_Parameter_ECM_VolThev(data_save, options, wtSi, cRate)
 

@@ -104,6 +104,26 @@ options.Electrical.tau_RC1_fac=1;
 options.Electrical.tau_RC2_fac=1;
 options.Electrical.tau_RC3_fac=1;
 
+%% Mechanical & Geometric Parameters
+options.mech.BoundaryCondition = 'fixed'; % 'fixed' or 'free' (free is recommended for realistic stress)
+options.mech.d0_anode = 65e-6;           % [m]
+options.mech.d0_cathode = 55e-6;         % [m]
+options.mech.d0_sep = 12e-6;             % [m]
+options.mech.Area = 0.012;               % [m^2]
+
+% Material Stiffness (Young's Moduli in Pa)
+options.mech.E_anode = 12e9; 
+options.mech.E_cathode = 25e9; 
+options.mech.E_sep = 1.2e9; 
+
+% Particle Properties
+options.mech.R_p = 5e-6;                 % [m]
+options.mech.D_s = 1e-14;                % [m^2/s]
+options.mech.Omega = 3.497e-6;           % [m^3/mol]
+options.mech.nu = 0.3;                   % Poisson ratio
+options.mech.rho_avg = 2000;             % [kg/m^3] average density
+options.mech.Capacity_theo = 372 * 3600; % [As/kg] Graphite theoretical
+
 %Solid Diffusion ##########################################################
 options.seg_particle=15; %Particle discretization (number of shells)
 % For more information on the number of shells, look at lecture notes.
@@ -151,4 +171,3 @@ msg.error.tau_RC3=0;
 msg.interupt.Umin=0;
 msg.interupt.Umax=0;
 end
-
