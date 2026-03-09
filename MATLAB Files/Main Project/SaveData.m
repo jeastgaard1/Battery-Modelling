@@ -18,7 +18,10 @@ end
 data_save.T.(options.Save.T{cr,:})(run_variable,siW) ...
     =battery_res.T.(options.Save.T{cr,:})(1,:);
 
-%% ── Current Distribution──────────────────────────────────────
+data_save.TVE.(options.Save.TVE{cr,:})(run_variable,siW) ...
+    =battery_res.TVE.(options.Save.TVE{cr,:})(1,:);
+    
+%% ── Current Distribution (PRAVEEN) ──────────────────────────────────────
 % Current distribution is time-invariant — store as 2D (siW x cr).
 % Written only at timeStep==1; all other steps are identical so no
 % time dimension is needed. Plotting reads directly as (wt% x cr).
