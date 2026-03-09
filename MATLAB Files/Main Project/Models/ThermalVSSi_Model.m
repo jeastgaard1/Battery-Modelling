@@ -1,10 +1,10 @@
 function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
 
 switch param.cRate
+    case 0.1
+        T_rate = 'T_lowC';
     case 1
-        C_rate = 'lowC';
-    case 2
-        C_rate = 'midC';
+        T_rate = 'T_midC';
     otherwise
         C_rate = 'highC';
 end
@@ -22,11 +22,10 @@ end
 
 % === State variables ===
 T = battery_res.T.(T_rate)(1,1);
-SoC = max(0,min(1,param.za(timeStep)));
-battery_res.SoC(1,1) = SoC;
 
+SoC = battery_res.SoC(1,1);
 
-wtSi = param.anode.wtSi
+wtSi = param.anode.wtSi;
 
 % === OCV and entropic coefficient ===
 Uocv = param.OCV_tot(SoC, wtSi);

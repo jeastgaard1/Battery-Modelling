@@ -1,85 +1,21 @@
-%% VolSoc_MathModel.m
-% =========================================================================
-% Pure math-driven Volume vs SOC model for a SiGr composite anode.
-% Volume expansion derived from crystal structures (pure math).
-% SOC grid pulled from project data (Potential_Gr_Si_NMC.mat).
-%
-% Core equations:
-%   Graphite:  alpha_Gr = (d_LiC6 - d_C6) / d_C6        [d-spacing]
-%   Silicon:   alpha_Si = (V_Li15Si4 - V_Si) / V_Si      [unit cell volume]
-%   Composite: V/V0 = 1 + phi_Si*dV_Si + phi_Gr*dV_Gr    [rule of mixtures]
-%   phi_Si = (w/rho_Si) / (w/rho_Si + (1-w)/rho_Gr)      [wt% -> vol%]
-% =========================================================================
+function [data_save] = Volume_Expansion(data_save, param, options, step, w)
 
-clear; clc; close all;
+%% Material densities [g/cm³] — standard crystallographic values
+rho_Si = options.materials.rho_Si;   % silicon, diamond cubic
+rho_Gr = options.materials.rho_G;   % graphite
 
-%% Pull Si weight fractions from project options
-mainProjDir = fullfile(fileparts(mfilename('fullpath')), ...
-    '..', 'MATLAB Files', 'Main Project');
-addpath(genpath(mainProjDir));
+% Needs to be called after ThermalVSSi has calculated SoC.
+data_save.dV_Si(step, w) = silicon_expansion(param.GrSi_SoC(step));
+data_save.dV_Gr(step, w) = graphite_expansion(param.GrSi_SoC(step));
 
-[options, ~] = options_ECM_VolThev();
-wtSi_list = [0, options.wtSi];   % prepend 0% (pure graphite) as baseline
+wtSi = param.anode.wtSi;
 
-% Pull SOC from project potential data (discharge curve)
-load('Potential_Gr_Si_NMC.mat', 'param');
-soc_raw = param.potentials.HC.DCH.GrSi_SoC;
-soc = sort(unique(soc_raw(soc_raw >= 0 & soc_raw <= 1)));   % filter, sort ascending
+phi_Si = (wtSi / rho_Si) / (wtSi / rho_Si + (1 - wtSi) / rho_Gr);
 
-rmpath(genpath(mainProjDir));
+data_save.VV0(step, w) = 1 + phi_Si .* data_save.dV_Si(step, w) + (1 - phi_Si) .* data_save.dV_Gr(step, w);
 
-fprintf('Si weight fractions: %s\n', ...
-    strjoin(compose('%.0f%%', wtSi_list*100), ', '));
-fprintf('SOC points: %d  (from Potential_Gr_Si_NMC.mat)\n', numel(soc));
-
-%% Material densities [g/cm^3] — standard crystallographic values
-rho_Si = 2.329;   % silicon, diamond cubic
-rho_Gr = 2.260;   % graphite
-
-%% Compute material-level expansion (pure crystallography)
-dV_Gr = graphite_expansion(soc);
-dV_Si = silicon_expansion(soc);
-
-%% Build composite V/V0 — one column per Si wt%
-VV0 = zeros(numel(soc), numel(wtSi_list));
-
-for i = 1:numel(wtSi_list)
-    w = wtSi_list(i);
-
-    % Convert weight fraction to volume fraction
-    %   phi_Si = (w/rho_Si) / (w/rho_Si + (1-w)/rho_Gr)
-    if w == 0
-        phi_Si = 0;
-    elseif w >= 1
-        phi_Si = 1;
-    else
-        phi_Si = (w / rho_Si) / (w / rho_Si + (1 - w) / rho_Gr);
-    end
-
-    % Rule of mixtures for composite anode:
-    %   V/V0 = 1 + phi_Si * dV_Si(z) + (1 - phi_Si) * dV_Gr(z)
-    VV0(:,i) = 1 + phi_Si .* dV_Si + (1 - phi_Si) .* dV_Gr;
 end
 
-%% Plot — matching VolSocV2 style
-figure;
-plot(soc, VV0, 'LineWidth', 2);
-grid on;
-xlabel('SOC [-]');
-ylabel('V/V_0 [-]');
-title('Anode V/V_0 vs SOC — effect of Si content (math model)');
-legend(compose('wt_{Si} = %.0f%%', wtSi_list*100), 'Location', 'NorthWest');
-
-%% Summary
-fprintf('\n=== Anode V/V0 at full lithiation (SOC = 1) ===\n');
-for i = 1:numel(wtSi_list)
-    fprintf('  wt_Si = %4.0f%%  =>  V/V0 = %.4f  (%.1f%% expansion)\n', ...
-        wtSi_list(i)*100, VV0(end,i), (VV0(end,i)-1)*100);
-end
-
-%% =====================================================================
-%%                 LOCAL FUNCTIONS  (pure crystallography)
-%% =====================================================================
 
 function dV = graphite_expansion(z)
 %GRAPHITE_EXPANSION  Fractional volume change of graphite vs SOC.

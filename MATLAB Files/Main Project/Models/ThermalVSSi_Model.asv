@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 function [battery_res] = ThermalVSSi_Model(battery_res,param,options,timeStep,SiW,cRate)
 
 switch cRate
@@ -10,6 +11,20 @@ switch cRate
 end
 T_rate = "T_" + C_rate;
 TVE_rate = "TVE_" + C_rate;
+=======
+function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
+
+switch param.cRate
+    case 1
+        T_rate = 'T_lowC';
+    case 2
+        T_rate = 'T_midC';
+    otherwise
+        T_rate = 'T_highC';
+end
+
+timeStep = battery_res.time(1,1);
+>>>>>>> main
 
 % Initialize temperature at start and when discharge changes to charge.
 if ~isfield(battery_res.T, T_rate) || isempty(battery_res.T.(T_rate)) ...
@@ -17,6 +32,7 @@ if ~isfield(battery_res.T, T_rate) || isempty(battery_res.T.(T_rate)) ...
     battery_res.T.(T_rate)(1,1) = options.ini.T;
 end
 
+<<<<<<< HEAD
 
 % === State variables ===
 T = battery_res.T.(T_rate)(1,1);
@@ -29,6 +45,17 @@ w = options.wtSi(SiW);
 % === OCV and entropic coefficient ===
 Uocv = param.OCV_tot(SoC, w);
 dUdT = param.dUdt(SoC, w);
+=======
+% === State variables ===
+T = battery_res.T.(T_rate)(1,1);
+
+S
+wtSi = param.anode.wtSi;
+
+% === OCV and entropic coefficient ===
+Uocv = param.OCV_tot(SoC, wtSi);
+dUdT = param.dUdt(SoC, wtSi);
+>>>>>>> main
 
 % === Current calculated in ECM ===
 I = param.I(timeStep);
@@ -37,7 +64,11 @@ I = param.I(timeStep);
 hA = options.anode.hA * (1 + 0.02*(T - options.env.T_amb));
 
 % === Thermal mass ===
+<<<<<<< HEAD
 Cth = param.thermal.mcp(w);
+=======
+Cth = param.thermal.mcp(wtSi);
+>>>>>>> main
 
 % === Irreversible heat ===
 Qirr = I^2 * param.Rtot(timeStep);
@@ -54,6 +85,7 @@ battery_res.T.(T_rate)(1,1) = T + battery_res.dTdt * options.data.dt;
 % === SoC differential equation ===
 battery_res.dzdt = -I / (options.anode.Qa);
 
+<<<<<<< HEAD
 therm_strain_L = options.materials.alpha_L*...
     (battery_res.T.(T_rate)(1,1) - options.env.T_amb);
 % Thermal volumetric strain assuming isotropic expansion.
@@ -61,4 +93,8 @@ therm_strain_V = 3 * therm_strain_L;
 
 battery_res.TVE.(TVE_rate) = therm_strain_V;
 
+=======
+% Suggestion from TA was to -->
+% Check lithiation stages ->phase changes for Gr batteries.
+>>>>>>> main
 end
