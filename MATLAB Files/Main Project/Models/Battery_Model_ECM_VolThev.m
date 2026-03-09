@@ -3,8 +3,7 @@ function [battery_res,msg,options] = Battery_Model_ECM_VolThev(battery_res,param
 if options.bool.ini==1 %function called first time -> Cell states will be initialized
     %Time #################################################################
     battery_res.time(1,1)=0; %set time to 0
-    
-    %Temperature ##########################################################
+       %Temperature ##########################################################
     [battery_res]=ThermalModel_ECM_0D(battery_res,param,options,const);
     
     %SoC ##################################################################

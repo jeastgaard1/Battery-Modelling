@@ -40,6 +40,9 @@ addpath(genpath('Electrical'));
 % [param] = ECM_Parameter_ECM_VolThev(options, 0, 0); % Loads cell parameter with 0 % Si
 [battery_res, data_save] = structure_ECM_2RC_VolThev(options);% Loads final strucutre for results
 
+%Initialize saving array
+data_save.mech = cell(length(options.cRates), length(options.wtSi));
+
 % Setting initial values
 if options.bool.ini == 1
     battery_res.T.T_lowC(1,1) = options.ini.T;
@@ -98,8 +101,12 @@ for cr = 1:length(options.cRates)
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
-    
+     SOC_ref = param.GrSi_SoC;
+         % Call the mechanical model with the collected data
+         data_save.mech{cr, w} = Mechanical_Model_Function(options, options.wtSi(w), current_dist_time, SOC_ref, data_save.VV0(:, w));
+
     end
+         
     xlabel('Time [min]');
     ylabel('Terminal Voltage [V]');
     title(sprintf('GrSi ECM Simulation with differnt Si.-wt%% ( C-Rate of %.1f)',options.cRates(cr)));

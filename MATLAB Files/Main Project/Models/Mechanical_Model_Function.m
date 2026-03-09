@@ -1,4 +1,4 @@
-function [results] = Mechanical_Model_Function(options, wtSi, current_dist)
+function [results] = Mechanical_Model_Function(options, wtSi, current_dist, SOC_exp_ref, VV0_profile)
     % Extract parameters
     m = options.mech;
     
@@ -16,7 +16,7 @@ function [results] = Mechanical_Model_Function(options, wtSi, current_dist)
     eps_Gr = SoC_sim * 0.1; 
     eps_NMC = -SoC_sim * 0.02; 
     
-    eps_anode = (wtSi)*eps_Si + (1-wtSi)*eps_Gr;
+    eps_anode = interp1(SOC_exp_ref, VV0_profile - 1, SoC_sim, 'linear', 'extrap');
     delta_L = (m.d0_anode * eps_anode) + (m.d0_cathode * eps_NMC);
     
     % Cell Stress Calculation
