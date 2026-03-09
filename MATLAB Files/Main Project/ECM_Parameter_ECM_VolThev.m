@@ -5,6 +5,7 @@ function [param] = ECM_Parameter_ECM_VolThev(data_save, options, wtSi, cRate)
 % Retrieve given data in param
 load('Potential_Gr_Si_NMC.mat')
 
+
 % We now want to join the data since we have to discharge then charge up
 % again.
 param.NMC_OCV = [ param.potentials.HC.DCH.NMC_OCV(:,1);param.potentials.HC.CH.NMC_OCV(:,1) ];
@@ -33,6 +34,12 @@ options.time_span = 1:1:options.data.steps;
 param.anode.wtSi = options.wtSi(wtSi);
 param.cRate = cRate;
 param.time_mid = find(param.GrSi_SoC == 0, 1);
+% Defined start volume based on the mass and density. Different based
+% on the different wtSi.
+param.V0 = (options.anode.m * 1000) / ... [cm³]
+    ((options.materials.rho_Si * wtSi) + ...
+    (options.materials.rho_G * (1-wtSi)));
+
 
 fprintf("Found Half time: %.0f [m]\n",param.time_mid);
 %% ECM Functions

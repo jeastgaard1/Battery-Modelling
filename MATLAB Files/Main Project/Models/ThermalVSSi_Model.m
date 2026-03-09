@@ -2,12 +2,14 @@ function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
 
 switch param.cRate
     case 0.1
-        T_rate = 'T_lowC';
+        C_rate = 'lowC';
     case 1
-        T_rate = 'T_midC';
+        C_rate = 'midC';
     otherwise
-        T_rate = 'T_highC';
+        C_rate = 'highC';
 end
+T_rate = "T_" + C_rate;
+TVE_rate = "TVE_" + C_rate;
 
 timeStep = battery_res.time(1,1);
 
@@ -52,5 +54,13 @@ battery_res.T.(T_rate)(1,1) = T + battery_res.dTdt * options.data.dt;
 
 % === SoC differential equation ===
 battery_res.dzdt = -I / (options.anode.Qa);
+
+
+therm_strain_L = options.materials.alpha_L*...
+    (battery_res.T.(T_rate)(1,1) - options.env.T_amb);
+% Thermal volumetric strain assuming isotropic expansion.
+therm_strain_V = 3 * therm_strain_L;
+
+battery_res.TVE.(TVE_rate) = therm_strain_V;
 
 end
