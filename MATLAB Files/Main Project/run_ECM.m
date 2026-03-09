@@ -370,7 +370,7 @@ legend(compose('wt_{Si} = %.0f%%', options.wtSi*100), 'Location', 'NorthWest');
 
 %% ----- Thermal Strain ---- %%
 figure;
-plot(data_save.T.T_highC, data_save.TVE.TVE_highC, 'LineWidth', 2);
+plot(t_sim_CH, data_save.TVE.TVE_highC(param.time_mid : options.data.steps,:), 'LineWidth', 2);
 grid on;
 xlabel('SOC [-]');
 ylabel('V/V_0 [-]');
