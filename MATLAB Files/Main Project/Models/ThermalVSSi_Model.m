@@ -1,9 +1,9 @@
 function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
 
 switch param.cRate
-    case 1
+    case 0.1
         T_rate = 'T_lowC';
-    case 2
+    case 1
         T_rate = 'T_midC';
     otherwise
         T_rate = 'T_highC';

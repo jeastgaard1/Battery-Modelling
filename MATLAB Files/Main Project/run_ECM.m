@@ -346,12 +346,13 @@ for cr = 1:length(options.cRates)
     xlabel('Time [min]');
     title(sprintf('Thermal & SoC Evolution at %.1fC Charge', options.cRates(cr)));
     legend('Location','best');
-%% ----- Volume expansion Plot ------%%
-    figure;
-    plot(data_save.SoC(1 : options.data.steps, 1), data_save.VV0, 'LineWidth', 2);
-    grid on;
-    xlabel('SOC [-]');
-    ylabel('V/V_0 [-]');
-    title('Anode V/V_0 vs SOC — effect of Si content (math model)');
-    legend(compose('wt_{Si} = %.0f%%', options.wtSi*100), 'Location', 'NorthWest');
+
 end
+%% ----- Volume expansion Plot ------%%
+figure;
+plot(data_save.SoC(1 : options.data.steps, 1), data_save.VV0, 'LineWidth', 2);
+grid on;
+xlabel('SOC [-]');
+ylabel('V/V_0 [-]');
+title('Anode V/V_0 vs SOC — effect of Si content (math model)');
+legend(compose('wt_{Si} = %.0f%%', options.wtSi*100), 'Location', 'NorthWest');
