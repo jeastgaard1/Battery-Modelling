@@ -53,10 +53,7 @@ battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
 
 %% Solve for Volume expansion vs SoC
 for w = 1:length(options.wtSi)
-    [param]=ECM_Parameter_ECM_VolThev(data_save, options,w,options.cRates(1));
-    for step = 1:length(param.NMC_OCV(:,1))
-        [data_save] = Volume_Expansion(data_save, param, options, step, w );
-    end
+    
 end
 
 %% ODE for Terminal Voltage
@@ -66,7 +63,7 @@ for cr = 1:length(options.cRates)
         % Creating new parameters every time with different cell (wt%) and
         % C-Rates for simulation. Redundant/expensive but simple solution.  
         %options.bool.ini = 1; 
-        [param]=ECM_Parameter_ECM_VolThev(data_save,options, w, options.cRates(cr));
+        [param]=ECM_Parameter_ECM_VolThev(options,options.wtSi(w),options.cRates(cr));
         
         % Set up ODE equation
         x0 = [0; 0];

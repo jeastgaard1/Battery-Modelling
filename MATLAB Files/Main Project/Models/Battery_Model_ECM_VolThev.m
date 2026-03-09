@@ -10,8 +10,6 @@ else %calculation base on last value
     battery_res.time(1,1)= step;                    %Time Variable
     battery_res.SoC(1,1) = max(0,min(1,param.za(step)));
     
-    [battery_res] = Volume_Expansion(battery_res, param, options );
-    
     [battery_res] = ThermalVSSi_Model(battery_res,param,options);
     
     [battery_res] = Current_Distribution_Model(battery_res, param, options, step);

@@ -1,18 +1,18 @@
-function [battery_res] = Volume_Expansion(battery_res, param, options)
+function [data_save] = Volume_Expansion(data_save, param, options, step, w)
 
 %% Material densities [g/cm³] — standard crystallographic values
 rho_Si = options.materials.rho_Si;   % silicon, diamond cubic
 rho_Gr = options.materials.rho_G;   % graphite
 
 % Needs to be called after ThermalVSSi has calculated SoC.
-battery_res.dV_Si = silicon_expansion(battery_res.SoC);
-battery_res.dV_Gr = graphite_expansion(battery_res.SoC);
+data_save.dV_Si(step, w) = silicon_expansion(param.GrSi_SoC(step));
+data_save.dV_Gr(step, w) = graphite_expansion(param.GrSi_SoC(step));
 
 wtSi = param.anode.wtSi;
 
 phi_Si = (wtSi / rho_Si) / (wtSi / rho_Si + (1 - wtSi) / rho_Gr);
 
-battery_res.VV0 = 1 + phi_Si .* battery_res.dV_Si + (1 - phi_Si) .* battery_res.dV_Gr;
+data_save.VV0(step, w) = 1 + phi_Si .* data_save.dV_Si(step, w) + (1 - phi_Si) .* data_save.dV_Gr(step, w);
 
 end
 
