@@ -1,5 +1,16 @@
+%##########################################################################
+% ThermalVSSi_Model:
+%   Author: Joshua Eastgaard
+%   Purpose: Calculate thermal effects on the provided SiGr NMC cell.
+%            The intention is to use the provided DCH and CH data to
+%            perform all the proper calculation.
+%   Params: 
+%       - battery_res: data structure to save instant calculations.
+%       - options: data structure holding various consts and data.
+%%
 function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
 
+% Determine which C rate we are operating at for proper calcs. and saves.
 switch param.cRate
     case 0.1
         C_rate = 'lowC';
@@ -8,6 +19,8 @@ switch param.cRate
     otherwise
         C_rate = 'highC';
 end
+
+% Create required designation strings.
 T_rate = "T_" + C_rate;
 TVE_rate = "TVE_" + C_rate;
 
@@ -19,47 +32,45 @@ if ~isfield(battery_res.T, T_rate) || isempty(battery_res.T.(T_rate)) ...
     battery_res.T.(T_rate)(1,1) = options.ini.T;
 end
 
-
-% === State variables ===
+% Get the current states for the cell
 T = battery_res.T.(T_rate)(1,1);
 
 SoC = battery_res.SoC(1,1);
 
 wtSi = param.anode.wtSi;
 
-% === OCV and entropic coefficient ===
+% OCV and entropic coefficient
 dUdT = param.dUdT(SoC, wtSi);
 
-% === Current calculated in ECM ===
+% Current calculated in ECM
 I = param.I(timeStep);
 
-% === Nonlinear convection ===
+% Nonlinear convection
 hA = options.anode.hA * (1 + 0.002*(T - options.env.T_amb));
 
-% === Thermal mass ===
+% Thermal mass
 Cth = param.thermal.mcp(wtSi);
 
-% === Irreversible heat ===
-Qirr = I^2 * param.Rtot(timeStep);
+% Irreversible heat
+Qirr = I^2 * param.Rtot(timeStep); % [W]
 
-% === Reversible heat ===
-Qrev = I * T * dUdT;
+% Reversible heat
+Qrev = I * T * dUdT; % [W]
 
-% === Total heat balance ===
+% Total heat balance
 battery_res.dTdt = (Qirr + Qrev - hA*(T - options.env.T_amb)) / Cth;
 
-% === Update temperature using timestep ===
+% Update temperature using timestep
 battery_res.T.(T_rate)(1,1) = T + battery_res.dTdt * options.data.dt;
 
-% === SoC differential equation ===
+% SoC differential equation
 battery_res.dzdt = -I / (options.anode.Qa);
 
-
+% Thermal strain at a given SoC
 therm_strain_L = options.materials.alpha_L*...
     (battery_res.T.(T_rate)(1,1) - options.env.T_amb);
-% Thermal volumetric strain assuming isotropic expansion.
-therm_strain_V = 3 * therm_strain_L;
 
-battery_res.TVE.(TVE_rate) = therm_strain_V;
+% Thermal volumetric strain assuming isotropic expansion.
+battery_res.TVE.(TVE_rate) = 3 * therm_strain_L;
 
 end
