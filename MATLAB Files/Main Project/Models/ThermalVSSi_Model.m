@@ -1,13 +1,17 @@
-function [battery_res] = ThermalVSSi_Model(battery_res,param,options,timeStep,SiW,cRate)
+function [battery_res] = ThermalVSSi_Model(battery_res,param,options)
 
 switch param.cRate
     case 0.1
-        T_rate = 'T_lowC';
+        C_rate = 'lowC';
     case 1
-        T_rate = 'T_midC';
+        C_rate = 'midC';
     otherwise
-        T_rate = 'T_highC';
+        C_rate = 'highC';
 end
+T_rate = "T_" + C_rate;
+TVE_rate = "TVE_" + C_rate;
+
+timeStep = battery_res.time(1,1);
 
 % Initialize temperature at start and when discharge changes to charge.
 if ~isfield(battery_res.T, T_rate) || isempty(battery_res.T.(T_rate)) ...
@@ -24,8 +28,8 @@ SoC = battery_res.SoC(1,1);
 wtSi = param.anode.wtSi;
 
 % === OCV and entropic coefficient ===
-Uocv = param.OCV_tot(SoC, w);
-dUdT = param.dUdt(SoC, w);
+Uocv = param.OCV_tot(SoC, wtSi);
+dUdT = param.dUdt(SoC, wtSi);
 
 % === Current calculated in ECM ===
 I = param.I(timeStep);
@@ -34,7 +38,7 @@ I = param.I(timeStep);
 hA = options.anode.hA * (1 + 0.02*(T - options.env.T_amb));
 
 % === Thermal mass ===
-Cth = param.thermal.mcp(w);
+Cth = param.thermal.mcp(wtSi);
 
 % === Irreversible heat ===
 Qirr = I^2 * param.Rtot(timeStep);
@@ -50,5 +54,13 @@ battery_res.T.(T_rate)(1,1) = T + battery_res.dTdt * options.data.dt;
 
 % === SoC differential equation ===
 battery_res.dzdt = -I / (options.anode.Qa);
+
+
+therm_strain_L = options.materials.alpha_L*...
+    (battery_res.T.(T_rate)(1,1) - options.env.T_amb);
+% Thermal volumetric strain assuming isotropic expansion.
+therm_strain_V = 3 * therm_strain_L;
+
+battery_res.TVE.(TVE_rate) = therm_strain_V;
 
 end
