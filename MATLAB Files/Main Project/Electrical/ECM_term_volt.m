@@ -1,5 +1,14 @@
-% Function that determines the terminal voltage of the volume dependant 2RC
-% Thevian model.
+%##########################################################################
+% ECM_RC_ode:
+%   Author: Joshua Eastgaard
+%   Purpose: Function that determines the terminal voltage of the volume
+%            dependant 2RC Thevian model.
+%   Params: 
+%       - t: Current time step
+%       - U_RC: Array holding calculated RC voltages
+%       - param: 2RC Thev param model holding calculations and params.
+%%
+
 function U_term = ECM_term_volt(t, U_RC, param)
 % U_RC is desinged to be calculated through ODE45 using MATLAB.
 U_RC1 = U_RC(1);
