@@ -32,28 +32,37 @@ function [results] = Mechanical_Model_Function(options, param, current_dist, SOC
     end
     results.strain = eps_anode;
     results.thickening = delta_L;
+    results.SoC = SoC_sim;
 
     %% 2. Micro-Scale: Multi-Phase Particle Stress
     phases = {'Si', 'Gr'};
-    % Corrected to ensure we use the right input names
+    
+    % Flux data remains derived from the current distribution input
     flux_data = {current_dist.j_Si/F, current_dist.j_G/F}; 
     
-    E_vals = [m.E_anode, 10e9];          
-    D_vals = [m.D_s, 1e-14];         
-    R_vals = [m.R_p, options.particles.r_G];          
-    Omega_vals = [m.Omega, 3e-6];     
-    C_max_vals = [300000, 30000];    
+    % Pull values from the options.mech (m) structure
+    E_vals     = [m.E_anode,  m.E_G];          
+    D_vals     = [m.D_s,      m.D_G];         
+    R_vals     = [m.R_p,      m.R_G];          
+    Omega_vals = [m.Omega,    m.Omega_G];     
+    C_max_vals = [m.C_max_Si, m.C_max_G]; 
 
     for p = 1:2
         phase_name = phases{p};
-        flux_vec = flux_data{p};
-
+        
+        % the electrical model uses absolute current, force the sign here.
+        dSoC = gradient(SoC_sim);
+        flux_sign = sign(dSoC);
+        flux_sign(flux_sign == 0) = 1; 
+        
+        % Apply the correct sign to the flux
+        flux_vec = flux_data{p} .* flux_sign; 
+        
         Nr = 50; 
         r = linspace(0, R_vals(p), Nr)'; 
         dr = r(2)-r(1);
         Fo = D_vals(p) * dt / dr^2;
 
-         % Diffusion Matrix (A)
         A = zeros(Nr, Nr);
         for i = 2:Nr-1
             gamma = Fo * (dr / r(i));
@@ -62,21 +71,25 @@ function [results] = Mechanical_Model_Function(options, param, current_dist, SOC
         A(1,1) = 1+6*Fo; A(1,2) = -6*Fo;
         A(Nr, Nr-1) = -2*Fo; A(Nr, Nr) = 1 + 2*Fo;
 
-        % Solve Concentrations
         c = zeros(Nr, steps);
+        
+        % FIX 2: Initialize particle concentration based on the starting SOC!
+        % If you start at 95% SOC, the particle starts 95% full.
+        c(:,1) = SoC_sim(1) * C_max_vals(p);
+        
         for t = 1:steps-1
             B = c(:,t);
             B(Nr) = B(Nr) + 2*Fo*dr*(flux_vec(t) / D_vals(p));
             c_next = A \ B;
-            % Numerical safety caps
             c_next(c_next < 0) = 0;
             c_next(c_next > C_max_vals(p)) = C_max_vals(p);
             c(:,t+1) = c_next;
         end
 
-        % Compute Tangential Stress
         const_tr = (Omega_vals(p) * E_vals(p)) / (9 * (1 - m.nu));
         sig_t = zeros(Nr, steps);
+        sig_r = zeros(Nr, steps);
+        
         for t = 1:steps
             c_avg = (3/R_vals(p)^3) * trapz(r, c(:,t).*r.^2);
             int_v = cumtrapz(r, c(:,t).*r.^2);
@@ -85,13 +98,12 @@ function [results] = Mechanical_Model_Function(options, param, current_dist, SOC
                 sig_t(i,t) = const_tr * (2*c_avg + avg_loc - 3*c(i,t));
                 sig_r(i,t) = const_tr * (c_avg - avg_loc);
             end
-            sig_t(1,t) = const_tr * (c_avg - c(1,t)); % Center stress
+            sig_t(1,t) = const_tr * (c_avg - c(1,t)); 
             sig_r(1,t) = sig_t(1,t);
         end
         
         results.(phase_name).sigma_t_surface = sig_t(Nr, :);
         results.(phase_name).sigma_r_center = sig_r(1, :);
         results.(phase_name).max_tensile = max(sig_t(:));
-        results.SoC = SoC_sim;
     end
 end
