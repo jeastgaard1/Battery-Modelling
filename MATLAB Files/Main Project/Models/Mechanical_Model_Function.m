@@ -73,8 +73,6 @@ function [results] = Mechanical_Model_Function(options, wtSi, current_dist, SOC_
 
         c = zeros(Nr, steps);
         
-        % FIX 2: Initialize particle concentration based on the starting SOC!
-        % If you start at 95% SOC, the particle starts 95% full.
         c(:,1) = SoC_sim(1) * C_max_vals(p);
         
         for t = 1:steps-1

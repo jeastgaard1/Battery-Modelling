@@ -491,7 +491,6 @@ xlabel('State of Charge (SOC) [%]', 'FontWeight', 'bold');
 ylabel('Total Stack Stress [MPa]', 'FontWeight', 'bold');
 title('Macro-Scale Pack Stress vs. Silicon Content (Full Cycle)', 'FontSize', 14);
 
-% Dynamic text placement based on current limits
 y_max = max(ylim);
 y_min = min(ylim);
 text(5, y_min + 0.95*(y_max-y_min), 'Line Styles (C-Rate):', 'FontWeight', 'bold', 'FontSize', 10);
