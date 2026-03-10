@@ -14,7 +14,8 @@
 %       - cRate: Numerical value that sets the paramaterized C-Rate.
 %%
 
-function [param] = ECM_Parameter_ECM_VolThev(data_save, options, wtSi, cRate)
+function [param] = ECM_Parameter_ECM_VolThev(...
+    data_save, options, wtSi, cRate)
 
 % Retrieve given data in param
 load('Potential_Gr_Si_NMC.mat')
