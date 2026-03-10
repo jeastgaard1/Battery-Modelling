@@ -1,3 +1,13 @@
+%##########################################################################
+% ECM_RC_ode:
+%   Author: Joshua Eastgaard
+%   Purpose: Provide Volume coupled 2RC voltage calculations for ODE
+%            solver.
+%   Params: 
+%       - t: Current time step
+%       - U_RC: Array holding calculated RC voltages
+%       - param: 2RC Thev param model holding calculations and params.
+%%
 function dx = ECM_RC_ode(t, U_RC, param )
 U_RC1 = U_RC(1);
 U_RC2 = U_RC(2);

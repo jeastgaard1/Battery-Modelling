@@ -1,4 +1,11 @@
-function [options,msg] = options_ECM_VolThev
+%##########################################################################
+% options_ECM_VolThev:
+%   Author: Joshua Eastgaard
+%   Purpose: Store all the required constants and data structures for the
+%            running models. One location to change any required values.
+%   Params: (none)
+%%
+function [options] = options_ECM_VolThev
 
 %% Simulation options
 options.data.steps = 4008; % Based on given data.
@@ -28,16 +35,17 @@ options.ECM.R2 = 8e-3; % Base resistance for second RC element
 options.ECM.C1 = 350; % Base capacitance for first RC element
 options.ECM.C2 = 1000; % Base capacitance for second RC element
 
-options.ECM.kR0 = 0.6; % Sensitivity of R0 to Si strain.
-options.ECM.kR1 = 0.4; % Sensitivity of R1 to Si strain.
-options.ECM.kR2 = 0.3; % Sensitivity of R2 to Si strain.
-options.ECM.kC1 = 0.2; % Sensitivity of C1 to Si strain.
+options.ECM.kR0 = 0.9; % Sensitivity of R0 to Si strain.
+options.ECM.kR1 = 0.8; % Sensitivity of R1 to Si strain.
+options.ECM.kR2 = 0.5; % Sensitivity of R2 to Si strain.
+options.ECM.kC1 = 0.4; % Sensitivity of C1 to Si strain.
 options.ECM.kC2 = 0.2; % Sensitivity of C2 to Si strain.
 
 % Anode Values
 options.anode.Qa = 5; % Ah Nominal Q
 options.anode.na = 1.0; % Dimensionless Coulumb efficiency
-options.anode.hA = 0.3; % Heat transfer Coefficient * Surface Area (smaller hA = cell retains heat)
+options.anode.hA = 0.3; % Heat transfer Coefficient * 
+                        % Surface Area (smaller hA = cell retains heat)
 options.anode.m = 0.3;  % cell mass [kg]
 
 %% Material Properties for Electrode Design Analysis
@@ -56,13 +64,13 @@ options.materials.dUdT_Si = 3.2e-4;  % Si is positive, not cool
 options.materials.dUdT_Gr = -1.4e-4; % Negative for Gr (cool right?)
 
 % Expansion Factors [vol-%]
-options.materials.e_Si = 280;        % Silicon expansion based on literature
-options.materials.e_G = 10;          % Graphite expansion based on literature
-options.materials.e_IM = 0;          % Inactive materials expansion
-options.materials.alpha_L = 3e-6;    % Linear thermal expansion coef. [1/K]
+options.materials.e_Si = 280;      % Silicon expansion based on literature
+options.materials.e_G = 10;        % Graphite expansion based on literature
+options.materials.e_IM = 0;        % Inactive materials expansion
+options.materials.alpha_L = 3e-6;  % Linear thermal expansion coef. [1/K]
 
 % Weight Fractions [wt-%]
-options.materials.w_IM = 0.05;          % Inactive materials weight fraction
+options.materials.w_IM = 0.05;     % Inactive materials weight fraction
 
 % Particle sizes [m]
 options.particles.r_Si = 100e-9;      % Silicon particle radius (100 nm)
@@ -72,21 +80,21 @@ options.particles.r_G = 10e-6;        % Graphite particle radius (10 m)
 options.electrode.epsilon = 0.35;     % Porosity
 
 % Kinetic parameters
-options.kinetics.i0_Si = 0.5;         % Silicon exchange current density [A/m�]
-options.kinetics.i0_G = 35;           % Graphite exchange current density [A/m�]
-options.kinetics.alpha = 0.5;         % Charge transfer coefficient
+options.kinetics.i0_Si = 0.5;   % Silicon exchange current density [A/m�]
+options.kinetics.i0_G = 35;     % Graphite exchange current density [A/m�]
+options.kinetics.alpha = 0.5;   % Charge transfer coefficient
 
 % Physical constants
 options.constants.F = 96485;          % Faraday constant [C/mol]
 options.constants.R_gas = 8.314;      % Gas constant [J/(mol�K)]
 
-% Initial / Enviroment Values ###########################################################
+% Initial / Enviroment Values #############################################
 options.ini.T=297; % [�K]
 options.ini.SoC=0.95;% [-] 0-1
 options.env.T_amb = 297; % Ambient Temperature
 
 % Bools ###################################################################
-options.bool.ini=1; %Do not change this value: 1 means that the set inital values will be used running the battery model the first time
+options.bool.ini=1; %Do not change this value
 options.bool.Aging=0;
 options.bool.Thermal=0;
 options.bool.cruise=0;
@@ -121,56 +129,12 @@ options.mech.nu = 0.3;            % Poisson's ratio
 
 % Particle properties for micro-scale stress
 options.mech.D_s = 1e-16;         % Si Diffusion coefficient [m^2/s]
-options.mech.R_p = options.particles.r_Si; % Use radius from options.particles
+options.mech.R_p = options.particles.r_Si; % Use defined radius
 options.mech.Omega = 1.2e-5;      % Si Partial molar volume [m^3/mol]
-
-options.mech.BoundaryCondition = 'fixed'; % 'fixed' (for stack stress) or 'free
-
-%Solid Diffusion ##########################################################
-options.seg_particle=15; %Particle discretization (number of shells)
-% For more information on the number of shells, look at lecture notes.
-%In case of EIS Data:
-% These are just lists of string values so that we can reference the values
-% later.
-options.Names_ECM={'tau_1';'R_1';'tau_2';'R_2';'tau_3';'R_3';'tau_4';'R_4';'tau_5';'R_5' ...
-    ;'tau_6';'R_6';'tau_7';'R_7';'tau_8';'R_8';'tau_9';'R_9' ...
-    };
-options.Names_ECM_U={'U_1';'U_2';'U_3';'U_4';'U_5';'U_6';'U_7';'U_8';'U_9'};
-options.Names_Elements={'Zarc1';'Zarc2';'WarBurg'};
-
-%Thermal Model ############################################################
-options.Thermal.coolingPower=0; %[W]
+% 'fixed' (for stack stress) or 'free
+options.mech.BoundaryCondition = 'fixed'; 
 
 %Time Step ################################################################
 options.delta_t=1e-0; %[s]
-
-% Do not change this part #################################################
-%TransferData #############################################################
-% This cannot be changed as it is connected to the provided data stucture.
-options.Transfer.Cell={'I';'U';'T';'SoC';'OCV';'Entropy';'P_control';'P';'h'};
-options.Transfer.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
-options.Transfer.Particle={'c_Li_Anode';'c_Li_Cathode'};
-
-% options.Save.Cell={'I';'U';'T';'SoC';'OCV';'Entropy';'P_control';'P'};
-% options.Save.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
-% options.Save.Particle={'c_Li_Anode';'c_Li_Cathode'};
-
-% Error MSG ###############################################################
-msg.error.T=0;
-msg.error.Tmax=0;
-msg.error.I=0;
-msg.error.OCV=0;
-msg.error.SOC=0;
-
-msg.error.R_RC1=0;
-msg.error.R_RC2=0;
-msg.error.R_RC3=0;
-
-msg.error.tau_RC1=0;
-msg.error.tau_RC2=0;
-msg.error.tau_RC3=0;
-
-msg.interupt.Umin=0;
-msg.interupt.Umax=0;
 end
 
