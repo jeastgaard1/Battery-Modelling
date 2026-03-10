@@ -138,14 +138,14 @@ for cr = 1:length(options.cRates)
         
         end
 
-        mech_input.SOC  = param.GrSi_SoC; 
+        mech_input.SOC  = data_save.SoC(:, w); 
         mech_input.j_Si = data_save.current_dist.j_Si(:, w, cr);
         mech_input.j_G  = data_save.current_dist.j_G(:, w, cr); 
         SOC_exp_ref = param.NMC_SoC; 
         VV0_profile = data_save.VV0(:, w);
         % Call the mechanical function
-        data_save.mech{cr, w} =...
-            Mechanical_Model_Function(options, param, ...
+        data_save.mech{cr, w} = Mechanical_Model_Function(...
+            options, options.wtSi(w), ...
             mech_input, SOC_exp_ref, VV0_profile);
     
         % Plot the OCV curve from 2RC model

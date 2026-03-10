@@ -1,10 +1,10 @@
-function [results] = Mechanical_Model_Function(options, param, current_dist, SOC_exp_ref, VV0_profile)
+function [results] = Mechanical_Model_Function(options, wtSi, current_dist, SOC_exp_ref, VV0_profile)
     % Extract parameters
     m = options.mech;
     SoC_sim = current_dist.SOC;
-    % SoC_sim(SoC_sim < 0) = 0;
-    % SoC_sim(SoC_sim > 1) = 1;
-    steps = length(param.NMC_OCV(:,1));
+    SoC_sim(SoC_sim < 0) = 0;
+    SoC_sim(SoC_sim > 1) = 1;
+    steps = length(SoC_sim);
     dt = options.delta_t;
     F = options.constants.F;
     
