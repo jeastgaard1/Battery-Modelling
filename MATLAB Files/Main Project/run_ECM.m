@@ -459,7 +459,7 @@ for cr = 1:length(options.cRates)
     xlabel('Time [min]');
     title(sprintf('Thermal & SoC Evolution at %.1fC Charge', options.cRates(cr)));
     legend('Location','best');
-
+    saveas(gcf, cr + "test.png");
 end
 %% ----- Volume expansion Plot ------%%
 figure;
