@@ -50,15 +50,48 @@ end
 
 battery_res.Aging.SoH_R(1,1)=1; %Set inital SoH values
 battery_res.Aging.SoH_C(1,1)=1; %Set inital SoH values
-
+ 
 %% Solve for Volume expansion vs SoC
 for w = 1:length(options.wtSi)
     [param]=ECM_Parameter_ECM_VolThev(data_save, options, w,options.cRates(2));
     for step = 1:length(param.NMC_OCV(:,1))
         [data_save] = Volume_Expansion(data_save, param, options, step, w );
-        
     end
 end
+
+%% Volumetric Capacity sweep (fine wtSi grid — independent of ECM simulation)
+% -------------------------------------------------------------------------
+% Purpose:
+%   Compute volumetric capacity (Cases 1, 2, 3) across a fine Si wt-%
+%   sweep from 5% to 95%. This is independent of the ECM simulation which
+%   only runs for the 5 compositions in options.wtSi.
+wtSi_sweep = (0.05:0.05:0.95);   % 19 compositions: 5% to 95% in steps of 5%
+data_save_vc = data_save;         % Safe copy — protects original ECM data
+
+for w = 1:length(wtSi_sweep)
+
+    % Set wtSi as scalar for this iteration so ECM_Parameter always
+    % indexes at position 1 — avoids out-of-bounds error
+    options_vc       = options;
+    options_vc.wtSi  = wtSi_sweep(w);  % e.g. 0.05 at w=1, 0.10 at w=2 ...
+
+    % Build param for this single composition (index=1 since wtSi is scalar)
+    [param_vc] = ECM_Parameter_ECM_VolThev(data_save_vc, options_vc, 1, options.cRates(2));
+
+    % Compute SOC-dependent volume expansion for this composition
+    % Results stored in data_save_vc.dV_Si(:,w) and data_save_vc.dV_Gr(:,w)
+    for step = 1:length(param_vc.NMC_OCV(:,1))
+        [data_save_vc] = Volume_Expansion(data_save_vc, param_vc, options_vc, step, w);
+    end
+
+    % Compute volumetric capacity using actual expansion at full lithiation
+    % dV_Si(end,w) and dV_Gr(end,w) give the SOC=1 (fully lithiated) values
+    % Results accumulated into data_save_vc.vol_cap at index w
+    [battery_res.vol_cap, data_save_vc] = Volumetric_Capacity_Model(param_vc, options_vc, data_save_vc, w);
+
+end
+% After loop: data_save_vc.vol_cap.wtSi = [5, 10, 15, ..., 95]
+% Ready for Case 1, 2, 3 plots using the full Si wt-% design space
 
 %% ODE for Terminal Voltage
 for cr = 1:length(options.cRates)
@@ -82,13 +115,6 @@ for cr = 1:length(options.cRates)
             V_sim(k) = ECM_term_volt(t_sim(k), u_sim(k,:).', param);
             % This Battery_Model is where all models will be called each loop.
             [battery_res,options] = Battery_Model_ECM_VolThev(battery_res,param,options,k); %Cell ECM Model
-            
-            % Calcuate volumetric capacitry for the first C-Rate after
-            % first run has been completed.
-            if cr == 1 && k == 1
-                battery_res.vol_cap = Volumetric_Capacity_Model(param, options);
-            end
-            
             % After every model generation, data will need to be saved so
             % that it can be plotted later.
             [data_save] = SaveData(battery_res, data_save, options, k, w, cr);
@@ -150,10 +176,11 @@ sgtitle('Current Distribution vs Silicon Content', 'FontSize', 16, 'FontWeight',
 
 %Extract data for FIRST C-rate only 
 %data_save.vol_cap is now a struct
-wtSi_array    = data_save.vol_cap.wtSi;
-G_A_array     = data_save.vol_cap.G_A;
-V_A_case1     = data_save.vol_cap.case1.V_A;
-P_A_req_case1 = data_save.vol_cap.case1.P_A_required;
+wtSi_array    = data_save_vc.vol_cap.wtSi;
+G_A_array     = data_save_vc.vol_cap.G_A;
+V_A_case1     = data_save_vc.vol_cap.case1.V_A;
+P_A_req_case1 = data_save_vc.vol_cap.case1.P_A_required;
+
 %% ═══════════════════════════════════════════════════════════════════════
 %% FIGURE 1: CASE STUDY 1 - Zero Expansion (E=0 & P_ALi=0)
 %% ═══════════════════════════════════════════════════════════════════════
@@ -236,8 +263,8 @@ colors_porosity = [
 ];
 
 % Extract V_A for each porosity level (already calculated in model!)
-E_case2       = data_save.vol_cap.case2.E;
-V_A_case2_all = data_save.vol_cap.case2.V_A_array;
+E_case2       = data_save_vc.vol_cap.case2.E;
+V_A_case2_all = data_save_vc.vol_cap.case2.V_A_array;
 
 figure('Position', [150, 150, 1400, 700]);
 set(gcf, 'Color', 'w');
@@ -285,6 +312,73 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
 %fprintf('✓ Case Study 2 plot created\n');
 %fprintf('✓ All volumetric capacity case study plots complete!\n\n');
+
+
+%% ═══════════════════════════════════════════════════════════════════════
+%% FIGURE 3: CASE STUDY 3 - Variable Porosity (P_ALi calculated)
+%% ═══════════════════════════════════════════════════════════════════════
+% Extract Case 3 data
+V_A_case3     = data_save_vc.vol_cap.case3.V_A;
+P_ALi_case3   = data_save_vc.vol_cap.case3.P_ALi;
+E_case3       = data_save_vc.vol_cap.case3.E;
+
+figure('Position', [200, 200, 1400, 700]);
+set(gcf, 'Color', 'w');
+
+% Left Y-axis: Volumetric and Gravimetric Capacity
+yyaxis left;
+hold on; grid on; box on;
+
+% Volumetric Capacity (Red)
+plot(wtSi_array, V_A_case3, '-', 'LineWidth', 3, ...
+     'Color', [0.85 0.33 0.10], 'DisplayName', 'V_A Case 3');
+
+% Gravimetric Capacity (Green) — same as Cases 1 & 2, material property
+plot(wtSi_array, G_A_array, '-', 'LineWidth', 3, ...
+     'Color', [0.47 0.67 0.19], 'DisplayName', 'G_A (Si/Graphite)');
+
+ylabel('Volumetric V_A (mAh/cm^3) & Gravimetric G_A (mAh/g)', ...
+       'FontSize', 12, 'FontWeight', 'bold');
+ylim([0, 3500]);
+set(gca, 'YColor', 'k');
+
+% Right Y-axis: P_ALi and Expansion
+yyaxis right;
+hold on;
+
+% Porosity after lithiation (Blue)
+plot(wtSi_array, P_ALi_case3, '-', 'LineWidth', 3, ...
+     'Color', [0.00 0.45 0.74], 'DisplayName', 'P_{ALi} (after lithiation)');
+
+% Expansion tolerance (dashed purple)
+plot(wtSi_array, E_case3, '--', 'LineWidth', 2, ...
+     'Color', [0.49 0.18 0.56], 'DisplayName', 'Expansion E (vol-%)');
+
+% Mark P_ALi = 0 crossing (electrode fully densified)
+idx_zero = find(P_ALi_case3 <= 0, 1, 'first');
+if ~isempty(idx_zero)
+    plot(wtSi_array(idx_zero), 0, 'ks', ...
+         'MarkerSize', 12, 'MarkerFaceColor', 'k', 'DisplayName', 'P_{ALi} = 0');
+    xline(wtSi_array(idx_zero), '--k', 'LineWidth', 1.5);
+    yline(0, '--k', 'LineWidth', 1.5);
+end
+
+ylabel('P_{ALi} (vol-%) & Expansion E (vol-%)', ...
+       'FontSize', 12, 'FontWeight', 'bold');
+ylim([-50, 250]);
+set(gca, 'YColor', [0.00 0.45 0.74]);
+
+% X-axis
+xlabel('Silicon w_{Si} amount (wt-%)', 'FontSize', 12, 'FontWeight', 'bold');
+xlim([0, 100]);
+
+% Title
+title('Case-Study 3: Variable Porosity (P_{ALi} = P_A - \Sigma v_j e_j)', ...
+      'FontSize', 14, 'FontWeight', 'bold');
+
+legend('Location', 'northwest', 'FontSize', 11);
+set(gca, 'FontSize', 11, 'LineWidth', 1.5);
+
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.

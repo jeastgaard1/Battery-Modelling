@@ -1,4 +1,4 @@
-function [vol_cap_results] = Volumetric_Capacity_Model(param, options)
+function [vol_cap_results, data_save] = Volumetric_Capacity_Model(param, options, data_save, w)
 %% ═══════════════════════════════════════════════════════════════════════
 %% VOLUMETRIC CAPACITY ANALYSIS - ELECTRODE DESIGN CASES
 %% ═══════════════════════════════════════════════════════════════════════
@@ -13,10 +13,8 @@ rho_G = options.materials.rho_G;        % [g/cm³]
 rho_IM = options.materials.rho_IM;      % [g/cm³]
 s_Si = options.materials.s_Si;          % [mAh/g]
 s_G = options.materials.s_G;            % [mAh/g]
-e_Si = options.materials.e_Si;          % [vol-%]
-e_G = options.materials.e_G;            % [vol-%]
-w_IM = options.materials.w_IM;          % [wt-%]
 
+w_IM = options.materials.w_IM * 100;   % Convert fraction (0.05) -> wt-% (5)
 %% Get current configuration
 wtSi = param.anode.wtSi * 100;    % Silicon weight fraction [%]
 %w_Si_range = 0:0.5:95;
@@ -26,16 +24,22 @@ if wtG < 0
     error('Invalid composition: wtG < 0 for wtSi = %.1f wt-%%', wtSi);
 end
 
-%% Weight fractions (convert to decimals for equations)s
-%w_Si = wtSi / 100;
-%w_G = wtG / 100;
-%w_IM_frac = w_IM / 100;
+%% Get actual expansion at full lithiation from Volume_Expansion results
+% dV_Si(end, w) is the fractional volume change at SOC=1 (fully lithiated)
+% Convert fractional -> vol-% to match units used in Otero equations
+e_Si_actual = data_save.dV_Si(end, w) * 100;  % [vol-%]
+e_G_actual  = data_save.dV_Gr(end, w) * 100;  % [vol-%]
 
 %% Gravimetric capacity [mAh/g] - Equation (2)
 G_A = (wtSi * s_Si + wtG * s_G) / 100;
 
 %% Initial electrode porosity
-P_A = options.electrode.epsilon;  % Initial porosity (before lithiation)
+P_A = options.electrode.epsilon * 100;  % Convert fraction (0.35) -> vol-% (35)
+
+sum_w_rho          = wtSi / rho_Si + wtG / rho_G + w_IM / rho_IM;
+sum_w_e_rho        = wtSi * e_Si_actual / rho_Si + wtG * e_G_actual / rho_G;
+sum_w_e_rho_frac   = wtSi * e_Si_actual / (rho_Si * 100) + ...
+                     wtG  * e_G_actual  / (rho_G  * 100);
 
 %% ═══════════════════════════════════════════════════════════════════════
 %% CASE 1: ZERO EXPANSION (Theoretical Baseline)
@@ -49,21 +53,12 @@ P_ALi_case1 = 0;  % Porosity after lithiation set to zero for max capacity
 
 % Calculate initial porosity required - Equation (10)
 % P_A = [P_ALi * Σ(w_j/ρ_j) + Σ(w_j*e_j/ρ_j)] / [Σ(w_j/ρ_j) + Σ(w_j*e_j/100*ρ_j)]
-
-numerator = wtSi * e_Si / rho_Si + wtG * e_G / rho_G;
-
-denominator = wtSi / rho_Si + wtG / rho_G + w_IM / rho_IM + ...
-              (wtSi * e_Si / rho_Si + wtG * e_G / rho_G) / 100;
-
-P_A_required_case1 = numerator / denominator;
-
-% Density of lithiated electrode - Equation (4)
-%rho_ALi_case1 = (100 - P_ALi_case1) / ...
-                %(w_Si/rho_Si + w_G/rho_G + w_IM_frac/rho_IM + ...
-                 %w_Si*e_Si/(rho_Si*100) + w_G*e_G/(rho_G*100));
+numerator_case1   = sum_w_e_rho;
+denominator_case1 = sum_w_rho + sum_w_e_rho_frac;
+P_A_required_case1 = numerator_case1 / denominator_case1;
 
 % Volumetric capacity - Equation (5)
-V_A_case1 = G_A * 100 / denominator;
+V_A_case1 = G_A * 100 / denominator_case1;
 
 %% ═══════════════════════════════════════════════════════════════════════
 %% CASE 2: CONSTANT POROSITY (Practical Design)
@@ -78,52 +73,27 @@ n_porosity = length(porosity_levels);
 
 % Calculate expansion - Equation (11)
 % E = [Σ(w_j*e_j/ρ_j)] / [Σ(w_j/ρ_j)]
-sum_w_e_rho = wtSi * e_Si / rho_Si + wtG * e_G / rho_G;
-sum_w_rho = wtSi / rho_Si + wtG / rho_G + w_IM / rho_IM;
+% Expansion tolerance factor 
+E_case2 = sum_w_e_rho / sum_w_rho;     % [vol-%]
 
-E_case2 = sum_w_e_rho / sum_w_rho;  % This gives decimal, multiply by 100 for %
-
-% Calculate volumetric capacity for each porosity level
+% Volumetric capacity for each porosity level - Equation (5)
 V_A_case2_array = zeros(1, n_porosity);
 
 for p = 1:n_porosity
-    % Calculate using weight percentages
-    sum_w_e_rho_fraction = wtSi*e_Si/(rho_Si*100) + wtG*e_G/(rho_G*100);
-    
-    % Density at this porosity
-    rho_ALi = (100 - porosity_levels(p)) / (sum_w_rho + sum_w_e_rho_fraction);
-    
-    % Volumetric capacity
-    V_A_case2_array(p) = G_A * rho_ALi;
+    rho_ALi_p          = (100 - porosity_levels(p)) / (sum_w_rho + sum_w_e_rho_frac);
+    V_A_case2_array(p) = G_A * rho_ALi_p;
 end
 
-% Use actual porosity (P_A) for primary result
-P_ALi_case2 = P_A;
-idx_actual = find(porosity_levels == round(P_A * 100));
+% Primary result at actual electrode porosity P_A
+P_ALi_case2  = P_A;
+idx_actual   = find(porosity_levels == round(P_A * 100));
+
 if ~isempty(idx_actual)
     V_A_case2 = V_A_case2_array(idx_actual);
 else
-    % If actual porosity not in list, calculate separately
-    sum_w_e_rho_fraction = wtSi*e_Si/(rho_Si*100) + wtG*e_G/(rho_G*100);
-    rho_ALi_case2 = (100 - P_A) / (sum_w_rho + sum_w_e_rho_fraction);
-    V_A_case2 = G_A * rho_ALi_case2;
+    rho_ALi_case2 = (100 - P_A) / (sum_w_rho + sum_w_e_rho_frac);
+    V_A_case2     = G_A * rho_ALi_case2;
 end
-
-
-
-%E_case2 = ((w_Si*e_Si/rho_Si + w_G*e_G/rho_G) / ...
-          %(w_Si/rho_Si + w_G/rho_G + w_IM_frac/rho_IM)) * 100;
-
-% Density of lithiated electrode - Equation (4)
-%rho_ALi_case2 = (100 - P_ALi_case2) / ...
-%                (w_Si/rho_Si + w_G/rho_G + w_IM_frac/rho_IM + ...
-%                 w_Si*e_Si/(rho_Si*100) + w_G*e_G/(rho_G*100));
-
-%sum_w_e_rho_fraction = wtSi*e_Si/(rho_Si*100) + wtG*e_G/(rho_G*100);
-%rho_ALi_case2 = (100 - P_ALi_case2) / (sum_w_rho + sum_w_e_rho_fraction);
-% Volumetric capacity - Equation (5)
-%V_A_case2 = G_A * rho_ALi_case2;
-
 
 %% ═══════════════════════════════════════════════════════════════════════
 %% CASE 3: VARIABLE POROSITY (Optimized Design)
@@ -141,15 +111,14 @@ w_Si_frac = wtSi / 100;
 w_G_frac = wtG / 100;
 w_IM_frac = w_IM / 100;
 
-% Calculate volume fractions - Equation (9)
-% v_j = (ρ_A / ρ_j) * w_j
-
 % First calculate initial density - Equation (1)
 %rho_A = (100 - P_A) / (w_Si/rho_Si + w_G/rho_G + w_IM_frac/rho_IM);
-rho_A = (100 - P_A) / (w_Si_frac/rho_Si + w_G_frac/rho_G + w_IM_frac/rho_IM);
+rho_A = (100 - P_A) / (w_Si_frac / rho_Si + w_G_frac / rho_G + w_IM_frac / rho_IM);
 
+% Volume fractions of active materials - Equation (9)
+% v_j = (ρ_A / ρ_j) * w_j
 v_Si = (rho_A / rho_Si) * w_Si_frac;
-v_G = (rho_A / rho_G) * w_G_frac;
+v_G  = (rho_A / rho_G)  * w_G_frac;
 %v_IM = (rho_A / rho_IM) * w_IM_frac;
 
 % Calculate P_ALi - Equation (7) rearranged for P_ALi
@@ -158,51 +127,50 @@ v_G = (rho_A / rho_G) * w_G_frac;
 
 %V_f_over_V_i = 1 + E_case3/100;
 
-P_ALi_case3 = P_A - (v_Si*e_Si + v_G*e_G)/100;
+% Porosity after lithiation - Equation (7)
+P_ALi_case3 = P_A - (v_Si * e_Si_actual + v_G * e_G_actual) / 100;
 
 % Density of lithiated electrode - Equation (4)
 %rho_ALi_case3 = (100 - P_ALi_case3) / ...
 %                (w_Si/rho_Si + w_G/rho_G + w_IM_frac/rho_IM + ...
 %                 w_Si*e_Si/(rho_Si*100) + w_G*e_G/(rho_G*100));
-rho_ALi_case3 = (100 - P_ALi_case3) / (sum_w_rho + sum_w_e_rho_fraction);
+rho_ALi_case3 = (100 - P_ALi_case3) / (sum_w_rho + sum_w_e_rho_frac);
+
 % Volumetric capacity - Equation (5)
 V_A_case3 = G_A * rho_ALi_case3;
 
-% fprintf('  Expansion (E): %.2f%%\n', E_case3);
-% fprintf('  Initial porosity (P_A): %.2f\n', P_A);
-% fprintf('  Porosity after Li (P_ALi): %.2f\n', P_ALi_case3);
-% fprintf('  Volumetric capacity: %.2f mAh/cm³\n', V_A_case3);
-% fprintf('\n');
-
-%% Store results
+%% Store results in struct
 vol_cap_results.wtSi = wtSi;
-vol_cap_results.G_A = G_A;
-vol_cap_results.P_A = P_A;
+vol_cap_results.G_A  = G_A;
+vol_cap_results.P_A  = P_A;
 
-% Case 1
-vol_cap_results.case1.E = E_case1;
+vol_cap_results.case1.E            = E_case1;
 vol_cap_results.case1.P_A_required = P_A_required_case1;
-vol_cap_results.case1.P_ALi = P_ALi_case1;
-%vol_cap_results.case1.rho_ALi = rho_ALi_case1;
-vol_cap_results.case1.V_A = V_A_case1;
+vol_cap_results.case1.P_ALi        = P_ALi_case1;
+vol_cap_results.case1.V_A          = V_A_case1;
 
-% Case 2
-vol_cap_results.case2.E = E_case2;
-vol_cap_results.case2.P_ALi = P_ALi_case2;
-%vol_cap_results.case2.rho_ALi = rho_ALi_case2;
-vol_cap_results.case2.V_A = V_A_case2;
-vol_cap_results.case2.porosity_levels = porosity_levels;  % [0, 10, 20, 30, 40]
-vol_cap_results.case2.V_A_array = V_A_case2_array;  % V_A for all porosities
+vol_cap_results.case2.E              = E_case2;
+vol_cap_results.case2.P_ALi          = P_ALi_case2;
+vol_cap_results.case2.V_A            = V_A_case2;
+vol_cap_results.case2.porosity_levels = porosity_levels; % [0, 10, 20, 30, 40]
+vol_cap_results.case2.V_A_array      = V_A_case2_array;  % V_A for all porosities
 
-% Case 3
-vol_cap_results.case3.E = E_case3;
+vol_cap_results.case3.E     = E_case3;
 vol_cap_results.case3.P_ALi = P_ALi_case3;
-%vol_cap_results.case3.rho_ALi = rho_ALi_case3;
-vol_cap_results.case3.V_A = V_A_case3;
+vol_cap_results.case3.V_A   = V_A_case3;
 
-
-% fprintf('═══════════════════════════════════════════════════════════════\n');
-% fprintf('  VOLUMETRIC CAPACITY ANALYSIS COMPLETE\n');
-% fprintf('═══════════════════════════════════════════════════════════════\n\n');
-
+%% Accumulate into data_save.vol_cap at index w
+data_save.vol_cap.wtSi(w)               = vol_cap_results.wtSi;
+data_save.vol_cap.G_A(w)                = vol_cap_results.G_A;
+data_save.vol_cap.case1.V_A(w)          = vol_cap_results.case1.V_A;
+data_save.vol_cap.case1.P_A_required(w) = vol_cap_results.case1.P_A_required;
+data_save.vol_cap.case1.E(w)            = vol_cap_results.case1.E;
+data_save.vol_cap.case1.P_ALi(w)        = vol_cap_results.case1.P_ALi;
+data_save.vol_cap.case2.E(w)            = vol_cap_results.case2.E;
+data_save.vol_cap.case2.V_A(w)          = vol_cap_results.case2.V_A;
+data_save.vol_cap.case2.V_A_array(w,:)  = vol_cap_results.case2.V_A_array;
+data_save.vol_cap.case2.P_ALi(w)        = vol_cap_results.case2.P_ALi;
+data_save.vol_cap.case3.V_A(w)          = vol_cap_results.case3.V_A;
+data_save.vol_cap.case3.P_ALi(w)        = vol_cap_results.case3.P_ALi;
+data_save.vol_cap.case3.E(w)            = vol_cap_results.case3.E;
 end
