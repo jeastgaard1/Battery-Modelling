@@ -21,29 +21,29 @@ options.cell='GrSiNMC 21700class cell'; % Cell Type
 options.wtSi = [0.15 0.3 0.45 0.6 0.75];
 options.cRates = [0.1 1 3];
 %% ECM Variables
-% Based on GrSiNMC 21700class cell
-options.ECM.R0 = 8e-3; % Base resistance for intial element
-options.ECM.R1 = 2.5e-3; % Base resistance for first RC element
-options.ECM.R2 = 5e-3; % Base resistance for second RC element
-options.ECM.C1 = 300; % Base capacitance for first RC element
-options.ECM.C2 = 600; % Base capacitance for second RC element
+% Based on GrSi-NMC 21700 class cell
+options.ECM.R0 = 1.2e-3; % Base resistance for intial element
+options.ECM.R1 = 4e-3; % Base resistance for first RC element
+options.ECM.R2 = 8e-3; % Base resistance for second RC element
+options.ECM.C1 = 350; % Base capacitance for first RC element
+options.ECM.C2 = 1000; % Base capacitance for second RC element
 
-options.ECM.kR0 = 0.5; % Sensitivity of R0 to Si strain.
-options.ECM.kR1 = 0.3; % Sensitivity of R1 to Si strain.
-options.ECM.kR2 = 0.2; % Sensitivity of R2 to Si strain.
+options.ECM.kR0 = 0.6; % Sensitivity of R0 to Si strain.
+options.ECM.kR1 = 0.4; % Sensitivity of R1 to Si strain.
+options.ECM.kR2 = 0.3; % Sensitivity of R2 to Si strain.
 options.ECM.kC1 = 0.2; % Sensitivity of C1 to Si strain.
-options.ECM.kC2 = 0.1; % Sensitivity of C2 to Si strain.
+options.ECM.kC2 = 0.2; % Sensitivity of C2 to Si strain.
 
 % Anode Values
-options.anode.Qa = 5.5; % Ah Nominal Q
+options.anode.Qa = 5; % Ah Nominal Q
 options.anode.na = 1.0; % Dimensionless Coulumb efficiency
 options.anode.hA = 0.3; % Heat transfer Coefficient * Surface Area (smaller hA = cell retains heat)
 options.anode.m = 0.3;  % cell mass [kg]
 
 %% Material Properties for Electrode Design Analysis
 % Densities [g/cm�]
-options.materials.rho_Si = 2.3;      % Silicon density
-options.materials.rho_G = 2.24;      % Graphite density
+options.materials.rho_Si = 2.329;      % Silicon density
+options.materials.rho_G = 2.26;      % Graphite density
 options.materials.rho_IM = 1.1;      % Inactive materials density
 
 % Specific Capacities [mAh/g]
@@ -51,11 +51,15 @@ options.materials.s_Si = 3600;       % Silicon specific capacity
 options.materials.s_G = 330;         % Graphite specific capacity
 options.materials.s_IM = 0;          % Inactive materials (no capacity)
 
+% Entropic Coefficients 
+options.materials.dUdT_Si = 3.2e-4;
+options.materials.dUdT_Gr = -1.4e-4;
+
 % Expansion Factors [vol-%]
-options.materials.e_Si = 280;        % Silicon expansion
-options.materials.e_G = 10;          % Graphite expansion (assumed negligible)
+options.materials.e_Si = 280;        % Silicon expansion based on literature
+options.materials.e_G = 10;          % Graphite expansion based on literature
 options.materials.e_IM = 0;          % Inactive materials expansion
-options.materials.alpha_L = 3e-6;    % Linear CTE [1/K]
+options.materials.alpha_L = 3e-6;    % Linear thermal expansion coef. [1/K]
 
 % Weight Fractions [wt-%]
 options.materials.w_IM = 0.05;          % Inactive materials weight fraction

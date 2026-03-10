@@ -116,33 +116,18 @@ param.C2 = @(t) options.ECM.C2 * (1 + options.ECM.kC2 * param.Volexp(t) );
 % Cell voltage
 param.UCell = @(t) param.OCV_cathode(t) - param.OCV_anode(t);
 
-%% Thermal Parameters
-% These will need to be changed for the merge/integration into the ECM
-% Ohmic Resistance of the cell
-
 % Effective heat capacity of the electrode composite.
 param.ThermCap = @(w) 800*(1-w) + 700*w; % Gr 800J/kgK, Si 700J/kgK
 
-% Will look at different models for this later, this is just a demo value
-param.R00 = @(w) 0.02 + 0.03 * w; % Higher R, more irreversible heat and SEI thickening.
-
-% Placeholder OCV curve for Gr
-param.OCV_Gr = @(z) 0.1 + 0.9*z;
-
-% Placeholder OCV curve for Si
-param.OCV_Si = @(z) 0.2 + 0.7*z;
-
-% Placeholder weighted sum of Si and Gr OCV
-param.OCV_tot = @(z,w) w*param.OCV_Si(z) + (1-w)*param.OCV_Gr(z);
-
-% Entropic coefficient of graphite
-param.dUdt_Gr = @(c) 8e-6*sin(pi*c);
+% Entropic coefficient of graphite, const. value from [] in report.
+% Sin offers some realistic curvatures and was not "theory" based.
+param.dUdT_Gr = @(c) -1.4e-4*(0.8 + 0.2*sin(pi*c));
 
 % Entropic coefficient of silicon
-param.dUdt_Si = @(c) 2e-5*sin(pi*c);
+param.dUdT_Si = @(c) 3.2e-4*(0.8 + 0.2*sin(pi*c));
 
 % Weighted micture of entropic coefficients
-param.dUdt = @(c,w) w*param.dUdt_Si(c) + (1-w)*param.dUdt_Gr(c);
+param.dUdT = @(c,w) w*param.dUdT_Si(c) + (1-w)*param.dUdT_Gr(c);
 
 % Capacity ###############################################################
 % Above is a nominal cap being used, leaving this here for later
