@@ -1,4 +1,4 @@
-function [options,msg] = options_ECM_VolThev
+function [options] = options_ECM_VolThev
 
 %% Simulation options
 options.data.steps = 4008; % Based on given data.
@@ -155,22 +155,5 @@ options.Transfer.Particle={'c_Li_Anode';'c_Li_Cathode'};
 % options.Save.ECM={'Usc';'R';'R_RC1';'tau_RC1';'R_RC2';'tau_RC2';'R_RC3';'tau_RC3';'U_RC1';'U_RC2';'U_RC3'};
 % options.Save.Particle={'c_Li_Anode';'c_Li_Cathode'};
 
-% Error MSG ###############################################################
-msg.error.T=0;
-msg.error.Tmax=0;
-msg.error.I=0;
-msg.error.OCV=0;
-msg.error.SOC=0;
-
-msg.error.R_RC1=0;
-msg.error.R_RC2=0;
-msg.error.R_RC3=0;
-
-msg.error.tau_RC1=0;
-msg.error.tau_RC2=0;
-msg.error.tau_RC3=0;
-
-msg.interupt.Umin=0;
-msg.interupt.Umax=0;
 end
 
