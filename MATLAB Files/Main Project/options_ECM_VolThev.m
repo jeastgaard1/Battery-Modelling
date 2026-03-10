@@ -108,6 +108,24 @@ options.Electrical.tau_RC1_fac=1;
 options.Electrical.tau_RC2_fac=1;
 options.Electrical.tau_RC3_fac=1;
 
+%% Mechanical Model Parameters
+options.mech.d0_anode = 80e-6;    % Initial anode thickness [m]
+options.mech.d0_cathode = 70e-6;  % Initial cathode thickness [m]
+options.mech.d0_sep = 15e-6;      % Separator thickness [m]
+options.mech.Area = 0.05;         % Electrode area [m^2]
+
+options.mech.E_anode = 12e9;      % Anode Young's Modulus [Pa]
+options.mech.E_cathode = 25e9;    % Cathode Young's Modulus [Pa]
+options.mech.E_sep = 0.5e9;       % Separator Young's Modulus [Pa]
+options.mech.nu = 0.3;            % Poisson's ratio
+
+% Particle properties for micro-scale stress
+options.mech.D_s = 1e-16;         % Si Diffusion coefficient [m^2/s]
+options.mech.R_p = options.particles.r_Si; % Use radius from options.particles
+options.mech.Omega = 1.2e-5;      % Si Partial molar volume [m^3/mol]
+
+options.mech.BoundaryCondition = 'fixed'; % 'fixed' (for stack stress) or 'free
+
 %Solid Diffusion ##########################################################
 options.seg_particle=15; %Particle discretization (number of shells)
 % For more information on the number of shells, look at lecture notes.
