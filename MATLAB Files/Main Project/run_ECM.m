@@ -94,13 +94,6 @@ for cr = 1:length(options.cRates)
             [data_save] = SaveData(battery_res, data_save, options, k, w, cr);
             battery_res.time(1,1) = k;
         end
-
-        %Mech Stress Stuff
-        mech_input.SOC = data_save.SoC(1:numel(t_sim), w); 
-        mech_input.j_Si = data_save.current_dist.j_Si(1, w, cr);
-        mech_input.j_G  = data_save.current_dist.j_G(1, w, cr);
-
-        data_save.mech_results{cr, w} = Mechanical_Model_Function(options, options.wtSi(w), mech_input);
         
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
@@ -292,54 +285,6 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
 %fprintf('✓ Case Study 2 plot created\n');
 %fprintf('✓ All volumetric capacity case study plots complete!\n\n');
-
-
-%% Mechanical Plots
-%% ═══════════════════════════════════════════════════════════════════════
-%% PLOT PARTICLE-LEVEL STRESS COMPARISON (Radial vs Tangential)
-%% ═══════════════════════════════════════════════════════════════════════
-cmap_mech = jet(length(options.wtSi));
-
-for cr = 1:length(options.cRates)
-    fig = figure('Name', sprintf('Particle Stress Analysis @ %.1fC', options.cRates(cr)), ...
-                 'Units', 'normalized', 'Position', [0.1, 0.1, 0.8, 0.7], 'Color', 'w');
-    
-    phases = {'Si', 'Gr'};
-    titles = {'Silicon Particle Stresses', 'Graphite Particle Stresses'};
-    
-    for p = 1:2
-        subplot(1, 2, p); hold on; grid on;
-        for w = 1:length(options.wtSi)
-           res = data_save.mech_results{cr, w};
-            
-            % Plot Tangential Surface Stress (Solid line)
-            plot(res.SoC*100, res.(phases{p}).sigma_t_surface / 1e6, ...
-                 'Color', cmap_mech(w,:), 'LineWidth', 2, ...
-                 'DisplayName', sprintf('%.0f%% Si: \\sigma_t', options.wtSi(w)*100));
-            
-            % Plot Radial Center Stress (Dashed line)
-            % Note: Radial stress is maximum at the center and zero at the surface
-            plot(res.SoC*100, res.(phases{p}).sigma_r_center / 1e6, ...
-                 'Color', cmap_mech(w,:), 'LineWidth', 1.5, 'LineStyle', '--', ...
-                 'HandleVisibility', 'off'); 
-        end
-        
-        title(titles{p}, 'FontSize', 12);
-        xlabel('State of Charge (SOC) [%]');
-        ylabel('Stress [MPa]');
-        xlim([0 100]);
-        
-        if p == 1
-            legend('Location', 'southwest', 'NumColumns', 1);
-            text(5, -1200, 'Solid: Tangential (Surface)', 'FontSize', 9, 'FontAngle', 'italic');
-            text(5, -1400, 'Dash: Radial (Center)', 'FontSize', 9, 'FontAngle', 'italic');
-        end
-    end
-    sgtitle(sprintf('Intra-Particle Stress Comparison: %.1fC Discharge', options.cRates(cr)), ...
-            'FontSize', 14, 'FontWeight', 'bold');
-end
-
-
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.
