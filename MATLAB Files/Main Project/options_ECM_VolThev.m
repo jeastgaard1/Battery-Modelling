@@ -2,7 +2,7 @@ function [options,msg] = options_ECM_VolThev
 
 %% Simulation options
 options.data.steps = 4008; % Based on given data.
-options.total_time = 120; % minutes
+options.total_time = 120; % minutes, i.e. CH and DCH took 2 hours.
 options.time_vec = linspace(...
     0,options.total_time,...
     options.data.steps);
@@ -52,8 +52,8 @@ options.materials.s_G = 330;         % Graphite specific capacity
 options.materials.s_IM = 0;          % Inactive materials (no capacity)
 
 % Entropic Coefficients 
-options.materials.dUdT_Si = 3.2e-4;
-options.materials.dUdT_Gr = -1.4e-4;
+options.materials.dUdT_Si = 3.2e-4;  % Si is positive, not cool
+options.materials.dUdT_Gr = -1.4e-4; % Negative for Gr (cool right?)
 
 % Expansion Factors [vol-%]
 options.materials.e_Si = 280;        % Silicon expansion based on literature

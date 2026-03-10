@@ -121,10 +121,10 @@ param.ThermCap = @(w) 690*(1-w) + 700*w; % Gr 800J/kgK, Si 700J/kgK
 
 % Entropic coefficient of graphite, const. value from [still need] in report.
 % Sin offers some realistic curvatures and was not "theory" based.
-param.dUdT_Gr = @(c) -1.4e-4*(0.8 + 0.2*sin(pi*c));
+param.dUdT_Gr = @(c) -1.4e-4*(0.9 + 0.1*sin(pi*c));
 
 % Entropic coefficient of silicon
-param.dUdT_Si = @(c) 3.2e-4*(0.8 + 0.2*sin(pi*c));
+param.dUdT_Si = @(c) 3.2e-4*(0.9 + 0.1*sin(pi*c));
 
 % Weighted micture of entropic coefficients
 param.dUdT = @(c,w) w*param.dUdT_Si(c) + (1-w)*param.dUdT_Gr(c);

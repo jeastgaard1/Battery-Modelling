@@ -130,14 +130,15 @@ v_G  = (rho_A / rho_G)  * w_G_frac;
 % Porosity after lithiation - Equation (7)
 P_ALi_case3 = P_A - (v_Si * e_Si_actual + v_G * e_G_actual) / 100;
 
-% Density of lithiated electrode - Equation (4)
-%rho_ALi_case3 = (100 - P_ALi_case3) / ...
-%                (w_Si/rho_Si + w_G/rho_G + w_IM_frac/rho_IM + ...
-%                 w_Si*e_Si/(rho_Si*100) + w_G*e_G/(rho_G*100));
-rho_ALi_case3 = (100 - P_ALi_case3) / (sum_w_rho + sum_w_e_rho_frac);
-
-% Volumetric capacity - Equation (5)
-V_A_case3 = G_A * rho_ALi_case3;
+% After computing P_ALi_case3:
+if P_ALi_case3 < 0
+    % Design infeasible — electrode expansion exceeds pore space
+    P_ALi_case3 = 0;
+    V_A_case3   = NaN;  
+else
+    rho_ALi_case3 = (100 - P_ALi_case3) / (sum_w_rho + sum_w_e_rho_frac);
+    V_A_case3     = G_A * rho_ALi_case3;
+end
 
 %% Store results in struct
 vol_cap_results.wtSi = wtSi;
