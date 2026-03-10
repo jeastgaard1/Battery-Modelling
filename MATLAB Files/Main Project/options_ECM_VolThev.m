@@ -108,7 +108,7 @@ options.Electrical.tau_RC1_fac=1;
 options.Electrical.tau_RC2_fac=1;
 options.Electrical.tau_RC3_fac=1;
 
-%% Mechanical Model Parameters
+%% Mechanical Model Pack Properties
 options.mech.d0_anode = 80e-6;    % Initial anode thickness [m]
 options.mech.d0_cathode = 70e-6;  % Initial cathode thickness [m]
 options.mech.d0_sep = 15e-6;      % Separator thickness [m]
@@ -119,10 +119,22 @@ options.mech.E_cathode = 25e9;    % Cathode Young's Modulus [Pa]
 options.mech.E_sep = 0.5e9;       % Separator Young's Modulus [Pa]
 options.mech.nu = 0.3;            % Poisson's ratio
 
-% Particle properties for micro-scale stress
-options.mech.D_s = 1e-16;         % Si Diffusion coefficient [m^2/s]
-options.mech.R_p = options.particles.r_Si; % Use radius from options.particles
-options.mech.Omega = 1.2e-5;      % Si Partial molar volume [m^3/mol]
+%% Mechanical & Material Particle Properties
+% Silicon (Phase 1)
+options.mech.E_anode   = 12e9;      % [Pa]
+options.mech.D_s       = 1e-16;     % [m^2/s]
+options.mech.R_p       = 5e-7;      % [m]
+options.mech.Omega     = 1.2e-5;    % [m^3/mol]
+options.mech.C_max_Si  = 300000;    % [mol/m^3]
+
+% Graphite (Phase 2)
+options.mech.E_G       = 10e9;      % [Pa]
+options.mech.D_G       = 1e-14;     % [m^2/s]
+options.mech.R_G       = 5e-6;      % [m]
+options.mech.Omega_G   = 3e-6;      % [m^3/mol]
+options.mech.C_max_G   = 30000;     % [mol/m^3]
+
+options.mech.nu        = 0.3;       % Poisson's ratio (shared)
 
 options.mech.BoundaryCondition = 'fixed'; % 'fixed' (for stack stress) or 'free
 

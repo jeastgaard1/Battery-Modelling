@@ -394,7 +394,7 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
 %% Mechanical Plots
 %% ═══════════════════════════════════════════════════════════════════════
-%% PARTICLE STRESS ANALYSIS PLOTS
+%% PARTICLE STRESS ANALYSIS PLOTS 
 %% ═══════════════════════════════════════════════════════════════════════
 cmap_mech = jet(length(options.wtSi));
 
@@ -407,17 +407,24 @@ for cr = 1:length(options.cRates)
     
     for p = 1:2
         subplot(1, 2, p); hold on; grid on; box on;
+        
+        % Add a zero-stress reference line
+        yline(0, 'k-', 'LineWidth', 1.5, 'HandleVisibility', 'off');
+        
         for w = 1:length(options.wtSi)
-            % Accessing data stored as {cr, w}
             res = data_save.mech{cr, w};
             
+            soc_full = res.SoC * 100;
+            sig_t_full = real(res.(phases{p}).sigma_t_surface) / 1e6;
+            sig_r_full = real(res.(phases{p}).sigma_r_center) / 1e6;
+            
             % Plot Tangential Surface Stress (Solid line)
-            plot(res.SoC*100, real(res.(phases{p}).sigma_t_surface) / 1e6, ...
+            plot(soc_full, sig_t_full, ...
                 'Color', cmap_mech(w,:), 'LineWidth', 2, ...
                 'DisplayName', sprintf('%.0f%% Si: \\sigma_t', options.wtSi(w)*100));
             
             % Plot Radial Center Stress (Dashed line)
-            plot(res.SoC*100, real(res.(phases{p}).sigma_r_center) / 1e6, ...
+            plot(soc_full, sig_r_full, ...
                 'Color', cmap_mech(w,:), 'LineWidth', 1.5, 'LineStyle', '--', ...
                 'HandleVisibility', 'off');
         end
@@ -427,22 +434,27 @@ for cr = 1:length(options.cRates)
         ylabel('Stress [MPa]');
         xlim([0 100]);
         
+        % Helper Text for Full Cycle
+        text(2, max(ylim)*0.9, 'Discharge (Tension)', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0.6 0 0]);
+        text(2, min(ylim)*0.9, 'Charge (Compression)', 'FontSize', 10, 'FontWeight', 'bold', 'Color', [0 0 0.6]);
+        
         if p == 1
-            legend('Location', 'southwest', 'NumColumns', 1, 'FontSize', 8);
-            % Dynamic placement of helper text based on Y-axis
+            legend('Location', 'best', 'NumColumns', 1, 'FontSize', 8);
+            
+            % Placement for line style helper text
             y_limits = ylim;
-            text(5, y_limits(1) + 0.15*diff(y_limits), 'Solid: Tangential (Surface)', 'FontSize', 9, 'FontAngle', 'italic');
-            text(5, y_limits(1) + 0.08*diff(y_limits), 'Dash: Radial (Center)', 'FontSize', 9, 'FontAngle', 'italic');
+            text(50, y_limits(2)*0.85, 'Solid: Tangential (Surface)', 'FontSize', 9, 'FontAngle', 'italic');
+            text(50, y_limits(2)*0.75, 'Dash: Radial (Center)', 'FontSize', 9, 'FontAngle', 'italic');
         end
     end
-    sgtitle(sprintf('Intra-Particle Stress Comparison: %.1fC Discharge', options.cRates(cr)), ...
+    sgtitle(sprintf('Intra-Particle Stress Comparison: %.1fC (Full Cycle)', options.cRates(cr)), ...
             'FontSize', 14, 'FontWeight', 'bold');
 end
 
 %% ═══════════════════════════════════════════════════════════════════════
-%% TOTAL PACK (STACK) STRESS PLOT
+%% TOTAL PACK (STACK) STRESS PLOT (FULL CYCLE)
 %% ═══════════════════════════════════════════════════════════════════════
-figure('Name', 'Total Pack Stack Stress', 'Color', 'w', 'Position', [200, 200, 800, 500]);
+figure('Name', 'Total Pack Stack Stress (Full Cycle)', 'Color', 'w', 'Position', [200, 200, 800, 500]);
 hold on; grid on; box on;
 
 line_styles = {'-', '--', ':'};
@@ -460,13 +472,14 @@ end
 
 xlabel('State of Charge (SOC) [%]', 'FontWeight', 'bold');
 ylabel('Total Stack Stress [MPa]', 'FontWeight', 'bold');
-title('Macro-Scale Pack Stress vs. Silicon Content', 'FontSize', 14);
+title('Macro-Scale Pack Stress vs. Silicon Content (Full Cycle)', 'FontSize', 14);
 
-% Legend for C-Rates
+% Dynamic text placement based on current limits
 y_max = max(ylim);
-text(2, y_max*0.95, 'Line Styles (C-Rate):', 'FontWeight', 'bold', 'FontSize', 10);
+y_min = min(ylim);
+text(5, y_min + 0.95*(y_max-y_min), 'Line Styles (C-Rate):', 'FontWeight', 'bold', 'FontSize', 10);
 for cr = 1:length(options.cRates)
-    text(5, y_max*(0.95 - cr*0.06), sprintf('%s  %.1f C', line_styles{mod(cr-1,3)+1}, options.cRates(cr)), 'FontSize', 10);
+    text(10, y_min + (0.95 - cr*0.06)*(y_max-y_min), sprintf('%s  %.1f C', line_styles{mod(cr-1,3)+1}, options.cRates(cr)), 'FontSize', 10);
 end
 
 % Colorbar for Si Content
@@ -475,8 +488,6 @@ c = colorbar;
 c.Label.String = 'Silicon Weight Fraction (wt-%)';
 c.Ticks = linspace(0, 1, length(options.wtSi));
 c.TickLabels = string(options.wtSi * 100);
-
-
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.
