@@ -159,7 +159,9 @@ for cr = 1:length(options.cRates)
     title(sprintf('C-Rate %.1f', options.cRates(cr)), 'FontSize', 12, 'FontWeight', 'bold');
 
     if cr == 1
-        legend('Graphite', 'Silicon', 'Location', 'best');
+    legend('Graphite', 'Silicon', 'Location', 'northwest', ...
+           'FontSize', 10, 'Box', 'on');
+    ylim([0, max(max(I_G_snapshot), max(I_Si_snapshot)) * 1.3]);  % add headroom above bars
     end
     grid on;
 end
@@ -212,18 +214,30 @@ hold on;
 plot(wtSi_array, P_A_req_case1, '-', 'LineWidth', 3, ...
      'Color', [0.00 0.45 0.74], 'DisplayName', 'P_A (Si/Graphite)');
 
-% Mark P_A = 30% intersection (black square)
-P_A_target = 30;
+% Mark P_A = 35% intersection (black square)
+P_A_target = options.electrode.epsilon * 100;  % = 35 vol-%
 idx_30 = find(P_A_req_case1 >= P_A_target, 1, 'first');
+% if ~isempty(idx_30)
+%     plot(wtSi_array(idx_30), P_A_target, 'ks', ...
+%          'MarkerSize', 12, 'MarkerFaceColor', 'k', 'DisplayName', 'data1');
+% 
+%     % Vertical dashed line at this Si%
+%     xline(wtSi_array(idx_30), '--k', 'LineWidth', 1.5);
+%     % Horizontal dashed line at P_A = 30%
+%     yline(P_A_target, '--k', 'LineWidth', 1.5);
+% end
 if ~isempty(idx_30)
+    % Marker with meaningful label
     plot(wtSi_array(idx_30), P_A_target, 'ks', ...
-         'MarkerSize', 12, 'MarkerFaceColor', 'k', 'DisplayName', 'data1');
-    
-    % Vertical dashed line at this Si%
-    xline(wtSi_array(idx_30), '--k', 'LineWidth', 1.5);
-    
-    % Horizontal dashed line at P_A = 30%
-    yline(P_A_target, '--k', 'LineWidth', 1.5);
+         'MarkerSize', 12, 'MarkerFaceColor', 'k', ...
+         'DisplayName', sprintf('P_A = %.0f%% at %.0f wt-%% Si', ...
+         P_A_target, wtSi_array(idx_30)));
+
+    % Reference lines — hidden from legend
+    xline(wtSi_array(idx_30), '--k', 'LineWidth', 1.5, ...
+          'HandleVisibility', 'off');
+    yline(P_A_target, '--k', 'LineWidth', 1.5, ...
+          'HandleVisibility', 'off');
 end
 
 ylabel('Initial electrode porosity P_A (vol-%)', ...
@@ -265,7 +279,6 @@ colors_porosity = [
 % Extract V_A for each porosity level (already calculated in model!)
 E_case2       = data_save_vc.vol_cap.case2.E;
 V_A_case2_all = data_save_vc.vol_cap.case2.V_A_array;
-
 figure('Position', [150, 150, 1400, 700]);
 set(gcf, 'Color', 'w');
 
@@ -290,13 +303,13 @@ yyaxis right;
 hold on;
 
 % Plot Expansion (thick blue line)
-plot(wtSi_array, E_case2, '-', 'LineWidth', 4, ...
-     'Color', [0.00 0.45 0.74], 'DisplayName', 'Expansion tolerance factor');
+plot(wtSi_array, E_case2, '-', 'LineWidth', 3, ...
+     'Color', [0.2 0.2 0.2], 'DisplayName', 'Expansion tolerance E');
 
 ylabel('Expansion Tolerance E (vol-%)', ...
        'FontSize', 12, 'FontWeight', 'bold');
 ylim([0, 250]);
-set(gca, 'YColor', [0.00 0.45 0.74]);
+set(gca, 'YColor', [0.2 0.2 0.2]);
 
 % X-axis
 xlabel('Silicon w_{Si} amount (wt-%)', 'FontSize', 12, 'FontWeight', 'bold');
@@ -317,68 +330,63 @@ set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 %% ═══════════════════════════════════════════════════════════════════════
 %% FIGURE 3: CASE STUDY 3 - Variable Porosity (P_ALi calculated)
 %% ═══════════════════════════════════════════════════════════════════════
-% Extract Case 3 data
-V_A_case3     = data_save_vc.vol_cap.case3.V_A;
-P_ALi_case3   = data_save_vc.vol_cap.case3.P_ALi;
-E_case3       = data_save_vc.vol_cap.case3.E;
+V_A_case3   = data_save_vc.vol_cap.case3.V_A;
+P_ALi_case3 = data_save_vc.vol_cap.case3.P_ALi;
 
-figure('Position', [200, 200, 1400, 700]);
+% Find crossing index (P_ALi hits 0)
+idx_zero = find(P_ALi_case3 <= 0, 1, 'first');
+
+figure('Position', [200, 200, 1200, 650]);
 set(gcf, 'Color', 'w');
 
-% Left Y-axis: Volumetric and Gravimetric Capacity
+%% LEFT axis: V_A (stops at NaN) and G_A (full range)
 yyaxis left;
 hold on; grid on; box on;
 
-% Volumetric Capacity (Red)
 plot(wtSi_array, V_A_case3, '-', 'LineWidth', 3, ...
-     'Color', [0.85 0.33 0.10], 'DisplayName', 'V_A Case 3');
+     'Color', [0.85 0.33 0.10], 'DisplayName', 'V_A (Case 3)');
 
-% Gravimetric Capacity (Green) — same as Cases 1 & 2, material property
-plot(wtSi_array, G_A_array, '-', 'LineWidth', 3, ...
-     'Color', [0.47 0.67 0.19], 'DisplayName', 'G_A (Si/Graphite)');
+% plot(wtSi_array, G_A_array, '-', 'LineWidth', 3, ...
+%      'Color', [0.47 0.67 0.19], 'DisplayName', 'G_A (Si/Graphite)');
 
-ylabel('Volumetric V_A (mAh/cm^3) & Gravimetric G_A (mAh/g)', ...
+ylabel('Volumetric V_A (mAh/cm^3)', ...
        'FontSize', 12, 'FontWeight', 'bold');
 ylim([0, 3500]);
 set(gca, 'YColor', 'k');
 
-% Right Y-axis: P_ALi and Expansion
+%% RIGHT axis: P_ALi only — tight scale so it uses full axis height
 yyaxis right;
 hold on;
 
-% Porosity after lithiation (Blue)
 plot(wtSi_array, P_ALi_case3, '-', 'LineWidth', 3, ...
      'Color', [0.00 0.45 0.74], 'DisplayName', 'P_{ALi} (after lithiation)');
 
-% Expansion tolerance (dashed purple)
-plot(wtSi_array, E_case3, '--', 'LineWidth', 2, ...
-     'Color', [0.49 0.18 0.56], 'DisplayName', 'Expansion E (vol-%)');
-
-% Mark P_ALi = 0 crossing (electrode fully densified)
-idx_zero = find(P_ALi_case3 <= 0, 1, 'first');
+% Mark feasibility limit
 if ~isempty(idx_zero)
     plot(wtSi_array(idx_zero), 0, 'ks', ...
-         'MarkerSize', 12, 'MarkerFaceColor', 'k', 'DisplayName', 'P_{ALi} = 0');
-    xline(wtSi_array(idx_zero), '--k', 'LineWidth', 1.5);
-    yline(0, '--k', 'LineWidth', 1.5);
+         'MarkerSize', 12, 'MarkerFaceColor', 'k', ...
+         'DisplayName', sprintf('P_{ALi} = 0  (%.0f wt-%% Si limit)', wtSi_array(idx_zero)));
+    
+    xline(wtSi_array(idx_zero), '--k', 'LineWidth', 1.5, ...
+          'HandleVisibility', 'off');
 end
 
-ylabel('P_{ALi} (vol-%) & Expansion E (vol-%)', ...
-       'FontSize', 12, 'FontWeight', 'bold');
-ylim([-50, 250]);
+ylabel('P_{ALi} after lithiation (vol-%)', ...
+       'FontSize', 12, 'FontWeight', 'bold', 'Color', [0.00 0.45 0.74]);
+ylim([0, 40]);
 set(gca, 'YColor', [0.00 0.45 0.74]);
 
-% X-axis
-xlabel('Silicon w_{Si} amount (wt-%)', 'FontSize', 12, 'FontWeight', 'bold');
-xlim([0, 100]);
+%% Shared x-axis
+yyaxis left;  xlim([0, 100]);
+yyaxis right; xlim([0, 100]);
 
-% Title
+xlabel('Silicon w_{Si} amount (wt-%)', 'FontSize', 12, 'FontWeight', 'bold');
 title('Case-Study 3: Variable Porosity (P_{ALi} = P_A - \Sigma v_j e_j)', ...
       'FontSize', 14, 'FontWeight', 'bold');
 
 legend('Location', 'northwest', 'FontSize', 11);
 set(gca, 'FontSize', 11, 'LineWidth', 1.5);
-
+xlim([0, 100]);
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.
