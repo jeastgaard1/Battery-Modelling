@@ -34,7 +34,7 @@ dUdT = param.dUdT(SoC, wtSi);
 I = param.I(timeStep);
 
 % === Nonlinear convection ===
-hA = options.anode.hA * (1 + 0.02*(T - options.env.T_amb));
+hA = options.anode.hA * (1 + 0.002*(T - options.env.T_amb));
 
 % === Thermal mass ===
 Cth = param.thermal.mcp(wtSi);
