@@ -28,10 +28,10 @@ options.ECM.R2 = 8e-3; % Base resistance for second RC element
 options.ECM.C1 = 350; % Base capacitance for first RC element
 options.ECM.C2 = 1000; % Base capacitance for second RC element
 
-options.ECM.kR0 = 0.6; % Sensitivity of R0 to Si strain.
-options.ECM.kR1 = 0.4; % Sensitivity of R1 to Si strain.
+options.ECM.kR0 = 0.7; % Sensitivity of R0 to Si strain.
+options.ECM.kR1 = 0.5; % Sensitivity of R1 to Si strain.
 options.ECM.kR2 = 0.3; % Sensitivity of R2 to Si strain.
-options.ECM.kC1 = 0.2; % Sensitivity of C1 to Si strain.
+options.ECM.kC1 = 0.4; % Sensitivity of C1 to Si strain.
 options.ECM.kC2 = 0.2; % Sensitivity of C2 to Si strain.
 
 % Anode Values

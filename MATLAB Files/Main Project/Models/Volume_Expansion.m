@@ -41,9 +41,10 @@ function dV = graphite_expansion(z)
 %       1     |   3.706     |  10.49%
 %
 %  Incremental volume jumps between stages:
-%    empty -> stage 3:   3.50%   (grouped low-SOC transitions)
-%    stage 3 -> stage 2: 1.75%
-%    stage 2 -> stage 1: 5.24%
+%    empty -> stage 4:   2.62%   (dilute Li filling)
+%    stage 4 -> stage 3: 0.88%   (8.3% of total)
+%    stage 3 -> stage 2: 1.75%   (16.7% of total)
+%    stage 2 -> stage 1: 5.24%   (50.0% of total)
 %
 %  These jumps give the sigmoid weights: w_i = step_i / alpha
 
@@ -53,37 +54,42 @@ function dV = graphite_expansion(z)
     alpha = (dLi - d0) / d0;   % = 0.1049  (max expansion)
 
     % Volume levels at each stage from d-spacing formula
+    dV_stage4 = (dLi - d0) / (4 * d0);   % = 0.0263
     dV_stage3 = (dLi - d0) / (3 * d0);   % = 0.0350
     dV_stage2 = (dLi - d0) / (2 * d0);   % = 0.0525
     dV_stage1 = (dLi - d0) / (1 * d0);   % = 0.1049
 
     % Incremental steps -> sigmoid weights (derived, not fitted)
-    step1 = dV_stage3;                    % empty -> stage 3  = 0.0350
-    step2 = dV_stage2 - dV_stage3;        % stage 3 -> 2      = 0.0175
-    step3 = dV_stage1 - dV_stage2;        % stage 2 -> 1      = 0.0524
+    step1 = dV_stage4;                    % empty -> stage 4  = 0.0263
+    step2 = dV_stage3 - dV_stage4;        % stage 4 -> 3      = 0.0087
+    step3 = dV_stage2 - dV_stage3;        % stage 3 -> 2      = 0.0175
+    step4 = dV_stage1 - dV_stage2;        % stage 2 -> 1      = 0.0524
 
-    w1 = step1 / alpha;   % = 0.334
-    w2 = step2 / alpha;   % = 0.167
-    w3 = step3 / alpha;   % = 0.499
+    w1 = step1 / alpha;   % = 0.250  (25.0%)
+    w2 = step2 / alpha;   % = 0.083  (8.3%)
+    w3 = step3 / alpha;   % = 0.167  (16.7%)
+    w4 = step4 / alpha;   % = 0.500  (50.0%)
 
     % Sigmoid: smooth approximation of discrete phase transitions
     %   sigma(z, z0, s) = 1 / (1 + exp(-(z - z0)/s))
-    %   z0 = SOC at transition centre  (from graphite phase diagram)
+    %   z0 = SOC at transition centre  (from graphite phase diagram, Dahn 1991)
     %   s  = transition width           (thermal broadening)
     S = @(z, z0, s) 1 ./ (1 + exp(-(z - z0) ./ s));
 
-    z1 = 0.12;  s1 = 0.04;   % dilute -> stage 3
-    z2 = 0.50;  s2 = 0.06;   % stage 3 -> 2
-    z3 = 0.90;  s3 = 0.04;   % stage 2 -> 1
+    z1 = 0.06;  s1 = 0.02;   % empty -> stage 4  (dilute filling)
+    z2 = 0.20;  s2 = 0.04;   % stage 4 -> 3
+    z3 = 0.50;  s3 = 0.06;   % stage 3 -> 2
+    z4 = 0.90;  s4 = 0.04;   % stage 2 -> 1
 
-    raw = w1*S(z,z1,s1) + w2*S(z,z2,s2) + w3*S(z,z3,s3);
+    raw = w1*S(z,z1,s1) + w2*S(z,z2,s2) + w3*S(z,z3,s3) + w4*S(z,z4,s4);
 
     % Normalise so that dV(0) = 0  and  dV(1) = alpha  exactly
-    r0 = w1*S(0,z1,s1) + w2*S(0,z2,s2) + w3*S(0,z3,s3);
-    r1 = w1*S(1,z1,s1) + w2*S(1,z2,s2) + w3*S(1,z3,s3);
+    r0 = w1*S(0,z1,s1) + w2*S(0,z2,s2) + w3*S(0,z3,s3) + w4*S(0,z4,s4);
+    r1 = w1*S(1,z1,s1) + w2*S(1,z2,s2) + w3*S(1,z3,s3) + w4*S(1,z4,s4);
 
     dV = alpha * (raw - r0) / (r1 - r0);
 end
+
 
 function dV = silicon_expansion(z)
 %SILICON_EXPANSION  Fractional volume change of silicon vs SOC.
