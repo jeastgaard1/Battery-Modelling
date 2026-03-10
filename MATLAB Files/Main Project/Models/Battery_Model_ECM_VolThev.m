@@ -4,6 +4,16 @@ if options.bool.ini==1 %function called first time -> Cell states will be initia
     %Time #################################################################
     battery_res.time(1,1)=0; %set time to 0
     
+    %Temperature ##########################################################
+    [battery_res]=ThermalModel_ECM_0D(battery_res,param,options,const);
+    
+    %SoC ##################################################################
+    [battery_res,msg] = OCVandSOC_ECM_0D(battery_res,param,msg,options); 
+    %[battery_res,msg] = OCVandSOC_ECM_0D_hyst(battery_res,param,msg,options); 
+    
+    %ECM Parameter ############################################
+    [battery_res,msg] = ECM_Parameter_ECM_0D(battery_res,param,options,msg);        %Set ECM Parameter R, 1-2 RC
+    
     options.bool.ini=0; %Initilization done
 else %calculation base on last value
     %time #####################################################
