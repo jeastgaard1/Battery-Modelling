@@ -28,8 +28,7 @@ SoC = battery_res.SoC(1,1);
 wtSi = param.anode.wtSi;
 
 % === OCV and entropic coefficient ===
-Uocv = param.OCV_tot(SoC, wtSi);
-dUdT = param.dUdt(SoC, wtSi);
+dUdT = param.dUdT(SoC, wtSi);
 
 % === Current calculated in ECM ===
 I = param.I(timeStep);
