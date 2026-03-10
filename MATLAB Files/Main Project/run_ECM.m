@@ -89,6 +89,8 @@ for w = 1:length(wtSi_sweep)
     % Results accumulated into data_save_vc.vol_cap at index w
     [battery_res.vol_cap, data_save_vc] = Volumetric_Capacity_Model(param_vc, options_vc, data_save_vc, w);
 
+
+
 end
 % After loop: data_save_vc.vol_cap.wtSi = [5, 10, 15, ..., 95]
 % Ready for Case 1, 2, 3 plots using the full Si wt-% design space
@@ -120,7 +122,17 @@ for cr = 1:length(options.cRates)
             [data_save] = SaveData(battery_res, data_save, options, k, w, cr);
             battery_res.time(1,1) = k;
         end
-        
+
+      mech_input.SOC  = data_save.SoC(:, w); 
+        mech_input.j_Si = data_save.current_dist.j_Si(:, w, cr);
+        mech_input.j_G  = data_save.current_dist.j_G(:, w, cr); 
+        SOC_exp_ref = data_save.SoC(1:length(data_save.VV0), 1);
+        VV0_profile = data_save.VV0(:, w);
+        % Call the mechanical function
+        data_save.mech{w, cr} = Mechanical_Model_Function(options, options.wtSi(w), ...
+                                                         mech_input, SOC_exp_ref, VV0_profile);
+
+
         % Plot
         plot(t_sim, V_sim, 'LineWidth', 2, ...
              'DisplayName', sprintf('Si wt%% = %.2f', options.wtSi(w)));
@@ -379,6 +391,20 @@ title('Case-Study 3: Variable Porosity (P_{ALi} = P_A - \Sigma v_j e_j)', ...
 legend('Location', 'northwest', 'FontSize', 11);
 set(gca, 'FontSize', 11, 'LineWidth', 1.5);
 
+%% Mechanical Plots
+figure('Name', 'Mechanical Stress Analysis', 'Color', 'w');
+subplot(1,2,1); hold on; grid on;
+for w = 1:length(options.wtSi)
+    plot(data_save.mech{w, 2}.SoC, data_save.mech{w, 2}.stack_stress / 1e6, 'LineWidth', 2);
+end
+title('Stack Stress (1C Rate)'); xlabel('SOC [-]'); ylabel('Stress [MPa]');
+
+subplot(1,2,2); hold on; grid on;
+for w = 1:length(options.wtSi)
+    plot(data_save.mech{w, 2}.SoC, data_save.mech{w, 2}.Si.sigma_t_surface / 1e6, 'LineWidth', 2);
+end
+title('Si Particle Surface Stress'); xlabel('SOC [-]'); ylabel('Stress [MPa]');
+legend(compose('wt_{Si} = %.0f%%', options.wtSi*100));
 
 %% Plot Save_Data
 % Same as above, we need to plot different wt% for each C-Rate.
