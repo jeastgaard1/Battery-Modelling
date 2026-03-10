@@ -73,8 +73,8 @@ options.materials.alpha_L = 3e-6;  % Linear thermal expansion coef. [1/K]
 options.materials.w_IM = 0.05;     % Inactive materials weight fraction
 
 % Particle sizes [m]
-options.particles.r_Si = 100e-9;      % Silicon particle radius (100 nm)
-options.particles.r_G = 10e-6;        % Graphite particle radius (10 m)
+options.particles.r_Si = 5e-7;      % Silicon particle radius
+options.particles.r_G = 5e-6;        % Graphite particle radius
 
 % Electrode properties
 options.electrode.epsilon = 0.35;     % Porosity
@@ -129,16 +129,16 @@ options.mech.nu = 0.3;            % Poisson's ratio
 
 %% Mechanical & Material Particle Properties
 % Silicon (Phase 1)
-options.mech.E_anode   = 12e9;      % [Pa]
+options.mech.E_anode   = 80e9;      % [Pa]
 options.mech.D_s       = 1e-16;     % [m^2/s]
-options.mech.R_p       = 5e-7;      % [m]
-options.mech.Omega     = 1.2e-5;    % [m^3/mol]
-options.mech.C_max_Si  = 300000;    % [mol/m^3]
+options.mech.R_p       = options.particles.r_Si;      % [m]
+options.mech.Omega     = 11.392e-6;    % [m^3/mol]
+options.mech.C_max_Si  = 295000;    % [mol/m^3]
 
 % Graphite (Phase 2)
 options.mech.E_G       = 10e9;      % [Pa]
-options.mech.D_G       = 1e-14;     % [m^2/s]
-options.mech.R_G       = 5e-6;      % [m]
+options.mech.D_G       = 1.74e-15;     % [m^2/s]
+options.mech.R_G       = options.particles.r_G;      % [m]
 options.mech.Omega_G   = 3e-6;      % [m^3/mol]
 options.mech.C_max_G   = 30000;     % [mol/m^3]
 
