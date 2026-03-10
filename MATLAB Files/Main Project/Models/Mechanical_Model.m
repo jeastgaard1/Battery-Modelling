@@ -1,95 +1,197 @@
-function [results] = Mechanical_Model(options, wtSi, current_dist, SOC_exp_ref, VV0_profile)
-    % Extract parameters
-    m = options.mech;
+%% Combined Mechanical Model: Si-Gr Composite Anode (NMC Cell)
+% This script models cell-level expansion/stress AND particle-level stress.
+clear; clc; close all;
+
+%% 1. Configuration & User Inputs
+Si_wt_percent = 15;          % Silicon weight % in active material
+Gr_wt_percent = 85;          % Graphite weight % in active material
+BoundaryCondition = 'fixed'; % Options: 'fixed' or 'free'
+
+% Initial Geometry (L0)
+d0_anode = 65e-6;            % Anode thickness [m]
+d0_cathode = 55e-6;          % Cathode thickness [m]
+d0_sep = 12e-6;              % Separator thickness [m]
+Area = 0.012;                % Electrode Area [m^2]
+
+% Mechanical Stiffness (Young's Moduli in Pa)
+E_anode = 12e9; 
+E_cathode = 25e9; 
+E_sep = 1.2e9; 
+
+%% 2. Particle-Level Model Parameters (Zhang et al. 2007)
+R_p = 5e-6;                 % Particle radius [m]
+D_s = 1e-14;                % Diffusion coefficient [m^2/s]
+Omega = 3.497e-6;           % Partial molar volume [m^3/mol]
+nu = 0.3;                   % Poisson's ratio
+F = 96485;                  % Faraday's constant [C/mol]
+C_rate = 1;                 % Applied C-rate (1C)
+Capacity = 372 * 3600;      % Theoretical capacity [As/kg]
+i_n = (Capacity * R_p * 2000) / (3 * 3600); % Surface current density
+
+%% 3. Load and Process Data
+% Note: Using try/catch to ensure script runs even if external files are missing
+try
+    load('mechanicalProperties.mat'); 
+    extractData = @(s) cell2mat(struct2cell(s)');
+    anode_exp = readtable('Dilatometer_Anode.xlsx');
+    cathode_exp = readtable('Dilatometer_Cathode.xlsx');
     
-    % FIX: Use the dynamic SOC from the electrical simulation
-    SoC_sim = current_dist.SOC;
-    % Clamp SOC to physical bounds for stress calculations
-    SoC_sim(SoC_sim < 0) = 0;
-    SoC_sim(SoC_sim > 1) = 1;
-    steps = length(SoC_sim);
-    dt = options.delta_t;
-    F = options.constants.F;
-    
-    %% 1. Macro-Scale: Strain & Stack Stress
-    eps_Si = SoC_sim * 2.8; 
-    eps_Gr = SoC_sim * 0.1; 
+    SoC_sim = linspace(0, 1, 200)';
+    si_raw = extractData(mech.SiO_Ch);
+    eps_Si = interp1(si_raw(:,1), si_raw(:,2) - 1, SoC_sim, 'linear', 'extrap');
+    gr_raw = extractData(mech.Gr_Ch);
+    eps_Gr = interp1(gr_raw(:,1), gr_raw(:,2), SoC_sim, 'linear', 'extrap');
+    nmc_raw = extractData(mech.NMC_Dch);
+    eps_NMC = interp1(nmc_raw(:,1), nmc_raw(:,2), SoC_sim, 'linear', 'extrap');
+catch
+    warning('Data files not found. Using synthetic SoC/Strain vectors.');
+    SoC_sim = linspace(0, 1, 200)';
+    eps_Si = SoC_sim * 2.8; % Si expands ~280%
+    eps_Gr = SoC_sim * 0.1; % Gr expands ~10%
     eps_NMC = -SoC_sim * 0.02; 
-    
-    eps_anode = interp1(SOC_exp_ref, VV0_profile - 1, SoC_sim, 'linear', 'extrap');
-    delta_L = (m.d0_anode * eps_anode) + (m.d0_cathode * eps_NMC);
-    
-    % Cell Stress Calculation
-    Compliance = (m.d0_anode/(m.E_anode*m.Area)) + ...
-                 (m.d0_cathode/(m.E_cathode*m.Area)) + ...
-                 (m.d0_sep/(m.E_sep*m.Area));
-                 
-    if strcmp(m.BoundaryCondition, 'fixed')
-        results.stack_stress = (delta_L / Compliance) / m.Area;
-    else
-        results.stack_stress = zeros(size(SoC_sim));
-    end
-    results.strain = eps_anode;
-    results.thickening = delta_L;
-
-    %% 2. Micro-Scale: Multi-Phase Particle Stress
-    % Define properties for Silicon and Graphite phases
-    phases = {'Si', 'Gr'};
-    flux_data = {current_dist.j_Si/F, current_dist.j_G/F};
-    
-    % Material constants: [Silicon, Graphite]
-    E_vals = [12e9, 10e9];           % Young's Modulus [Pa]
-    D_vals = [m.D_s, 1e-14];         % Diffusion Coefficient [m^2/s]
-    R_vals = [m.R_p, 5e-6];          % Particle Radius [m]
-    Omega_vals = [m.Omega, 3e-6];     % Partial Molar Volume [m^3/mol]
-    C_max_vals = [300000, 30000];    % Max concentration [mol/m^3]
-
-    for p = 1:2
-        phase_name = phases{p};
-        flux_vec = flux_data{p};
-        
-        % Radial discretization
-        Nr = 50;
-        r = linspace(0, R_vals(p), Nr)';
-        dr = r(2)-r(1);
-        Fo = D_vals(p) * dt / dr^2;
-
-        % Diffusion Matrix (A)
-        A = zeros(Nr, Nr);
-        for i = 2:Nr-1
-            gamma = Fo * (dr / r(i));
-            A(i, i-1) = -Fo + gamma; A(i, i) = 1 + 2*Fo; A(i, i+1) = -Fo - gamma;
-        end
-        A(1,1) = 1+6*Fo; A(1,2) = -6*Fo;
-        A(Nr, Nr-1) = -2*Fo; A(Nr, Nr) = 1 + 2*Fo;
-
-        % Solve Concentrations
-        c = zeros(Nr, steps);
-        for t = 1:steps-1
-            B = c(:,t);
-            B(Nr) = B(Nr) + 2*Fo*dr*(flux_vec(t) / D_vals(p));
-            c_next = A \ B;
-            % Numerical safety caps
-            c_next(c_next < 0) = 0;
-            c_next(c_next > C_max_vals(p)) = C_max_vals(p);
-            c(:,t+1) = c_next;
-        end
-
-        % Compute Tangential Stress
-        const_t = (Omega_vals(p) * E_vals(p)) / (9 * (1 - m.nu));
-        sig_t = zeros(Nr, steps);
-        for t = 1:steps
-            c_avg = (3/R_vals(p)^3) * trapz(r, c(:,t).*r.^2);
-            int_v = cumtrapz(r, c(:,t).*r.^2);
-            for i = 2:Nr
-                avg_loc = (3/r(i)^3) * int_v(i);
-                sig_t(i,t) = const_t * (2*c_avg + avg_loc - 3*c(i,t));
-            end
-            sig_t(1,t) = const_t * (c_avg - c(1,t)); % Center stress
-        end
-        
-        results.(phase_name).sigma_t_surface = sig_t(Nr, :);
-        results.(phase_name).max_tensile = max(sig_t(:));
-    end
-    results.SoC = SoC_sim;
 end
+
+%% 4. Macro-Scale: Composite Expansion & Cell Stress
+% Anode Composite Strain
+eps_anode_total = (Si_wt_percent/100)*eps_Si + (Gr_wt_percent/100)*eps_Gr;
+
+% Total free thickness change
+delta_L_free_anode = d0_anode * eps_anode_total;
+delta_L_free_cathode = d0_cathode * eps_NMC;
+delta_L_total = delta_L_free_anode + delta_L_free_cathode;
+
+% Total cell compliance
+Compliance_cell = (d0_anode/(E_anode*Area)) + ...
+                  (d0_cathode/(E_cathode*Area)) + ...
+                  (d0_sep/(E_sep*Area));
+
+if strcmp(BoundaryCondition, 'fixed')
+    Force = delta_L_total / Compliance_cell;
+    Stress_cell = Force / Area; 
+else
+    Stress_cell = zeros(size(SoC_sim));
+end
+
+% Porosity Calculation (RE-ADDED HERE)
+phi_0 = 0.35; 
+V_pore_0 = d0_anode * Area * phi_0;
+V_solid_growth = delta_L_free_anode * Area;
+New_Porosity = (V_pore_0 - V_solid_growth) / (d0_anode * Area);
+
+%% 5. Micro-Scale: Particle Stress (Improved Implicit Solver)
+Nr = 50; 
+r = linspace(0, R_p, Nr)'; % Column vector
+dr = r(2) - r(1);
+% Calculate total time for 1C (3600s) and find correct dt
+total_time = 3600; 
+time_steps = length(SoC_sim);
+dt = total_time / time_steps; 
+
+c = zeros(Nr, time_steps); 
+flux = i_n / F; 
+
+% Precompute Implicit Matrix (A * c_next = c_now + b)
+% Equation: c_i^{n+1} - dt*D_s*(Laplacian) = c_i^n
+Fo = D_s * dt / dr^2;
+A = zeros(Nr, Nr);
+
+for i = 2:Nr-1
+    % Spherical diffusion: (d2c/dr2 + 2/r * dc/dr)
+    gamma = Fo * (1 / r(i) * dr); % Term for 2/r * dc/drwwwww
+    A(i, i-1) = -Fo + gamma;
+    A(i, i)   = 1 + 2*Fo;
+    A(i, i+1) = -Fo - gamma;
+end
+
+% Boundary Condition: Center (r=0) -> Symmetry (L'Hopital's rule: 3 * d2c/dr2)
+A(1, 1) = 1 + 6*Fo;
+A(1, 2) = -6*Fo;
+
+% Boundary Condition: Surface (r=R) -> Constant Flux
+A(Nr, Nr-1) = -1;
+A(Nr, Nr)   = 1;
+
+for t = 1:time_steps-1
+    B = c(:, t);
+    B(Nr) = (flux * dr / D_s); % Neumann BC RHS
+    c(:, t+1) = A \ B;
+end
+
+% 2. Radial and Tangential Stress (Numerically Stable Version)
+sigma_r = zeros(Nr, time_steps);
+sigma_t = zeros(Nr, time_steps);
+const_r = (2*Omega*E_anode)/(9*(1-nu));
+const_t = (Omega*E_anode)/(9*(1-nu));
+
+for t = 1:time_steps
+    % Global average concentration
+    c_avg = (3/R_p^3) * trapz(r, c(:,t).*r.^2);
+    
+    % Cumulative integral for local averages
+    int_val = cumtrapz(r, c(:,t).*r.^2);
+    
+    for i = 2:Nr
+        % Local average concentration up to radius r(i)
+        avg_local = (3/r(i)^3) * int_val(i);
+        
+        sigma_r(i,t) = const_r * (c_avg - avg_local);
+        sigma_t(i,t) = const_t * (2*c_avg + avg_local - 3*c(i,t));
+    end
+    
+    % CORRECT CENTER LIMIT: At r=0, avg_local = c(r=0)
+    % This ensures the stresses converge to the same point at the origin
+    sigma_r(1,t) = const_r * (c_avg - c(1,t));
+    sigma_t(1,t) = sigma_r(1,t); 
+    
+    % Linear smoothing for the first point to remove residual dr noise
+    sigma_r(2,t) = (sigma_r(1,t) + sigma_r(3,t)) / 2;
+    sigma_t(2,t) = (sigma_t(1,t) + sigma_t(3,t)) / 2;
+end
+
+%% 6. Visualization
+% Figure 1: Macro-Scale (Cell)
+figure('Color', 'w', 'Name', 'Cell-Level Mechanics', 'Position', [100 100 1000 700]);
+subplot(2,2,1);
+plot(SoC_sim*100, eps_anode_total*100, 'b', 'LineWidth', 2); hold on;
+title('Anode Strain [%]'); ylabel('Strain'); grid on;
+
+subplot(2,2,2);
+plot(SoC_sim*100, Stress_cell/1e6, 'r', 'LineWidth', 2);
+title('Stack Stress [MPa]'); ylabel('Stress'); grid on;
+
+subplot(2,2,3);
+plot(SoC_sim*100, New_Porosity*100, 'g', 'LineWidth', 2.5);
+title('Porosity Evolution'); ylabel('%'); grid on;
+yline(0, '--r');
+
+subplot(2,2,4);
+plot(SoC_sim*100, delta_L_total*1e6, 'm', 'LineWidth', 2);
+title('Total Thickening [\mum]'); ylabel('\Delta L'); grid on;
+
+% Figure 2: Micro-Scale (Particle)
+figure('Color', 'w', 'Name', 'Particle-Level Mechanics', 'Position', [150 150 1000 700]);
+subplot(2,2,1);
+plot(r/R_p, c(:, end), 'LineWidth', 2);
+title('Concentration Gradient'); xlabel('r/R'); grid on;
+
+subplot(2,2,2);
+plot(r/R_p, sigma_r(:, end)/1e6, 'b', 'LineWidth', 1.5); hold on;
+plot(r/R_p, sigma_t(:, end)/1e6, 'r', 'LineWidth', 1.5);
+title('Particle Stress Profile'); ylabel('MPa'); legend('\sigma_r', '\sigma_t'); grid on;
+xlabel('r/R');
+
+
+subplot(2,2,3);
+plot(SoC_sim*100, sigma_t(Nr, :)/1e6, 'r', 'LineWidth', 2);
+title('Surface Tangential Stress'); xlabel('SoC %'); grid on;
+
+subplot(2,2,4);
+max_vals = [max(Stress_cell)/1e6, max(sigma_t(:))/1e6];
+bar({'Stack', 'Particle'}, max_vals);
+title('Max Stress Comparison [MPa]'); grid on;
+
+% Console Summary
+fprintf('--- Results ---\n');
+fprintf('Max Stack Stress: %.2f MPa\n', max(Stress_cell/1e6));
+fprintf('Max Particle Stress: %.2f MPa\n', max(sigma_t(:)/1e6));
+fprintf('Final Porosity: %.2f%%\n', New_Porosity(end)*100);
